@@ -117,7 +117,7 @@ class index extends React.Component {
     }
 
     static async getInitialProps() {
-        const res = await fetch("http://localhost:3000/api/getuserdata");
+        const res = await fetch("https://calendar-ten.now.sh//api/getuserdata");
         const json = await res.json();
         var userdata = new User(json);
         var etd = eventsToDispay(userdata.calendars, new Date());
