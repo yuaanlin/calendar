@@ -12,10 +12,8 @@ import DialogActions from "@material-ui/core/DialogActions";
 import DialogContent from "@material-ui/core/DialogContent";
 import FormControl from "@material-ui/core/FormControl";
 import InputLabel from "@material-ui/core/InputLabel";
-import MenuItem from "@material-ui/core/MenuItem";
 import Select from "@material-ui/core/Select";
-import NativeSelect from "@material-ui/core/NativeSelect";
-import InputBase from "@material-ui/core/InputBase";
+import Paper from "@material-ui/core/Paper";
 
 function startOfDay(date) {
     if (!date instanceof Date) {
