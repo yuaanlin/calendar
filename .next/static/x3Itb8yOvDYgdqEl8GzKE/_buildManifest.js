@@ -1,1 +1,0 @@
-self.__BUILD_MANIFEST = (function(a){return {"/":[a],"/icstool":[a],"/index":[a]}}("static\u002Fchunks\u002Fff7a4bf642b6f7db831e499eaee9d583f088251a.d6463eb39bd04705c8d9.js"));self.__BUILD_MANIFEST_CB && self.__BUILD_MANIFEST_CB()

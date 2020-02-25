@@ -256,23 +256,26 @@ class index extends React.Component {
             return (
                 <Container maxWidth="md">
                     <Grid container>
-                        <Grid item xs={5}>
-                            <div style={{ marginTop: 80 }}>
-                                <DayPicker selectedDays={this.state.selectedDay} onDayClick={this.handleDayClick} />
+                        <Grid item xs={4}>
+                            <div style={{ marginTop: 60 }}>
+                                <Paper elevation={20} style={{backgroundColor: "#333333", padding: 16}}>
+                                    <DayPicker selectedDays={this.state.selectedDay} onDayClick={this.handleDayClick} />
+                                </Paper>
                             </div>
-                            <div style={{ margin: 26 }}>
+                            <div style={{ marginLeft: 26, marginTop: 60 }}>
                                 <h2 style={{ color: "white", marginBottom: 16 }}>
                                     {this.state.selectedDay.getFullYear()} / {this.state.selectedDay.getMonth() + 1} / {this.state.selectedDay.getDate()}
                                 </h2>
                                 <p style={{ color: "gray", marginTop: 0 }}>{dayDescription}</p>
                             </div>
                         </Grid>
-                        <Grid item xs={7}>
+                        <Grid item xs={8}>
                             <div
                                 style={{
                                     overflowY: "scroll",
                                     maxHeight: "90vh",
-                                    padding: 24
+                                    padding: 24,
+                                    marginLeft: 60
                                 }}
                             >
                                 <DayView events={filled} openEventEditDialog={this.openEventEditDialog} openEventCreateDialog={this.openEventCreateDialog} />
@@ -372,7 +375,7 @@ class index extends React.Component {
 
                     <style global jsx>{`
                         body {
-                            background: #333333;
+                            background: #222222;
                         }
                         ::-webkit-scrollbar {
                             width: 5px;
