@@ -14,6 +14,7 @@ import FormControl from "@material-ui/core/FormControl";
 import InputLabel from "@material-ui/core/InputLabel";
 import Select from "@material-ui/core/Select";
 import Paper from "@material-ui/core/Paper";
+import { Helmet } from "react-helmet";
 
 function startOfDay(date) {
     if (!date instanceof Date) {
@@ -255,31 +256,41 @@ class index extends React.Component {
 
             return (
                 <Container maxWidth="md">
+                    <Helmet>
+                        <title>Reacal : 專注於使用者體驗的日程規劃工具</title>
+                    </Helmet>
                     <Grid container>
                         <Grid item xs={4}>
-                            <div style={{ marginTop: 60 }}>
-                                <Paper elevation={20} style={{backgroundColor: "#333333", padding: 16}}>
-                                    <DayPicker selectedDays={this.state.selectedDay} onDayClick={this.handleDayClick} />
-                                </Paper>
+                            <div style={{ marginTop: 80, marginLeft: 28 }}>
+                                <h1 style={{color: "white", marginBottom: 0}}>Reacal</h1>
+                                <p style={{color: "gray", marginTop: 0}}>專注於使用者體驗的日程規劃工具</p>
                             </div>
-                            <div style={{ marginLeft: 26, marginTop: 60 }}>
-                                <h2 style={{ color: "white", marginBottom: 16 }}>
+                            <div style={{ marginTop: 40 }}>
+                                <DayPicker selectedDays={this.state.selectedDay} onDayClick={this.handleDayClick} />
+                            </div>
+                            <div style={{ marginLeft: 28, marginTop: 36 }}>
+                                <h3 style={{ color: "white", marginBottom: 8 }}>
                                     {this.state.selectedDay.getFullYear()} / {this.state.selectedDay.getMonth() + 1} / {this.state.selectedDay.getDate()}
-                                </h2>
+                                </h3>
                                 <p style={{ color: "gray", marginTop: 0 }}>{dayDescription}</p>
                             </div>
                         </Grid>
                         <Grid item xs={8}>
-                            <div
-                                style={{
-                                    overflowY: "scroll",
-                                    maxHeight: "90vh",
-                                    padding: 24,
-                                    marginLeft: 60
-                                }}
-                            >
-                                <DayView events={filled} openEventEditDialog={this.openEventEditDialog} openEventCreateDialog={this.openEventCreateDialog} />
-                            </div>
+                            <Paper elevation={10} style={{ backgroundColor: "#222222", marginLeft: 60 }}>
+                                <div
+                                    style={{
+                                        overflowY: "scroll",
+                                        maxHeight: "90vh",
+                                        padding: 48
+                                    }}
+                                >
+                                    <DayView
+                                        events={filled}
+                                        openEventEditDialog={this.openEventEditDialog}
+                                        openEventCreateDialog={this.openEventCreateDialog}
+                                    />
+                                </div>
+                            </Paper>
                         </Grid>
                     </Grid>
 
@@ -329,7 +340,7 @@ class index extends React.Component {
                             <Button color="primary" onClick={this.closeEventEditDialog}>
                                 取消
                             </Button>
-                            <Button color="primary" onClick={this.createEvent}>
+                            <Button color="primary" onClick={this.updateEvent}>
                                 更新
                             </Button>
                         </DialogActions>
@@ -345,7 +356,7 @@ class index extends React.Component {
                             </FormControl>
                             <TextField autoFocus margin="dense" id="name" label="事件標題" fullWidth onChange={this.handleTitleChange} />
                             <TextField
-                                defaultValue={new Date().getFullYear() + "/" + new Date().getMonth() + "/" + new Date().getDate()}
+                                defaultValue={this.state.selectedDay.getFullYear() + "/" + this.state.selectedDay.getMonth() + "/" + this.state.selectedDay.getDate()}
                                 margin="dense"
                                 id="name"
                                 onChange={this.handleDateChange}
@@ -376,6 +387,7 @@ class index extends React.Component {
                     <style global jsx>{`
                         body {
                             background: #222222;
+                            margin: 0;
                         }
                         ::-webkit-scrollbar {
                             width: 5px;

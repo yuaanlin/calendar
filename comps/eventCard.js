@@ -42,10 +42,10 @@ class EventCard extends React.Component {
             height: duration,
             backgroundColor: "transparent",
             borderBottomStyle: endTime.getMinutes() == 0 ? "solid" : "none",
-            borderBottomColor: "#444444",
+            borderBottomColor: "#333333",
             borderBottomWidth: 1,
             borderTopStyle: startTime.getMinutes() == 0 ? "solid" : "none",
-            borderTopColor: "#444444",
+            borderTopColor: "#333333",
             borderTopWidth: 1
         };
         return (
