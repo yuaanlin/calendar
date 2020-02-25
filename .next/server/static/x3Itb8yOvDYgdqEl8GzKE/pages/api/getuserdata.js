@@ -1,7 +1,7 @@
 module.exports =
 /******/ (function(modules) { // webpackBootstrap
 /******/ 	// The module cache
-/******/ 	var installedModules = {};
+/******/ 	var installedModules = require('../../../../ssr-module-cache.js');
 /******/
 /******/ 	// The require function
 /******/ 	function __webpack_require__(moduleId) {
@@ -88,23 +88,82 @@ module.exports =
 /******/
 /******/
 /******/ 	// Load entry module and return exports
-/******/ 	return __webpack_require__(__webpack_require__.s = "KqAr");
+/******/ 	return __webpack_require__(__webpack_require__.s = 1);
 /******/ })
 /************************************************************************/
 /******/ ({
 
-/***/ "KqAr":
+/***/ 1:
+/***/ (function(module, exports, __webpack_require__) {
+
+module.exports = __webpack_require__("XYBF");
+
+
+/***/ }),
+
+/***/ "B19g":
 /***/ (function(module, __webpack_exports__, __webpack_require__) {
 
 "use strict";
 __webpack_require__.r(__webpack_exports__);
+/* harmony import */ var mongodb__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__("ykE2");
+/* harmony import */ var mongodb__WEBPACK_IMPORTED_MODULE_0___default = /*#__PURE__*/__webpack_require__.n(mongodb__WEBPACK_IMPORTED_MODULE_0__);
+/* harmony import */ var next_connect__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__("Zb5a");
+/* harmony import */ var next_connect__WEBPACK_IMPORTED_MODULE_1___default = /*#__PURE__*/__webpack_require__.n(next_connect__WEBPACK_IMPORTED_MODULE_1__);
 
-    
 
-    /* harmony default export */ __webpack_exports__["default"] = (function (ctx) {
-      return Promise.all([])
-    });
-  
+const client = new mongodb__WEBPACK_IMPORTED_MODULE_0__["MongoClient"]("mongodb+srv://yuanlin:411612@cluster0-9wzb6.gcp.mongodb.net/test?retryWrites=true&w=majority", {
+  useNewUrlParser: true,
+  useUnifiedTopology: true
+});
+
+async function database(req, res, next) {
+  if (!client.isConnected()) await client.connect();
+  req.dbClient = client;
+  req.db = client.db("calendar");
+  return next();
+}
+
+const middleware = next_connect__WEBPACK_IMPORTED_MODULE_1___default()();
+middleware.use(database);
+/* harmony default export */ __webpack_exports__["default"] = (middleware);
+
+/***/ }),
+
+/***/ "XYBF":
+/***/ (function(module, __webpack_exports__, __webpack_require__) {
+
+"use strict";
+__webpack_require__.r(__webpack_exports__);
+/* harmony import */ var next_connect__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__("Zb5a");
+/* harmony import */ var next_connect__WEBPACK_IMPORTED_MODULE_0___default = /*#__PURE__*/__webpack_require__.n(next_connect__WEBPACK_IMPORTED_MODULE_0__);
+/* harmony import */ var _database__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__("B19g");
+
+
+const handler = next_connect__WEBPACK_IMPORTED_MODULE_0___default()();
+handler.use(_database__WEBPACK_IMPORTED_MODULE_1__["default"]);
+handler.get(async (req, res) => {
+  let doc = await req.db.collection("userdata").findOne({
+    username: "ken20001207"
+  });
+  console.log(doc);
+  res.json(doc);
+});
+/* harmony default export */ __webpack_exports__["default"] = (handler);
+
+/***/ }),
+
+/***/ "Zb5a":
+/***/ (function(module, exports) {
+
+module.exports = require("next-connect");
+
+/***/ }),
+
+/***/ "ykE2":
+/***/ (function(module, exports) {
+
+module.exports = require("mongodb");
 
 /***/ })
 
