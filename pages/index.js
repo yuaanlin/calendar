@@ -1,5 +1,5 @@
 import React from "react";
-import Container from "@material-ui/core/container";
+import Container from "@material-ui/core/Container";
 import DayView from "../comps/DayView";
 import fetch from "isomorphic-unfetch";
 import Grid from "@material-ui/core/Grid";
