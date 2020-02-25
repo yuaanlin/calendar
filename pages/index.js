@@ -326,7 +326,7 @@ class index extends React.Component {
                             />
                         </DialogContent>
                         <DialogActions>
-                            <Button color="primary" onClick={this.closeCreatingEventEditDialog}>
+                            <Button color="primary" onClick={this.closeEventEditDialog}>
                                 取消
                             </Button>
                             <Button color="primary" onClick={this.createEvent}>
