@@ -17,6 +17,7 @@ import Paper from "@material-ui/core/Paper";
 import { Helmet } from "react-helmet";
 import FormControlLabel from "@material-ui/core/FormControlLabel";
 import Switch from "@material-ui/core/Switch";
+import { backendURL } from "../config";
 
 function startOfDay(date) {
     if (!date instanceof Date) {
@@ -124,7 +125,7 @@ class index extends React.Component {
     }
 
     static async getInitialProps() {
-        const res = await fetch("https://calendar-ten.now.sh//api/getuserdata");
+        const res = await fetch(backendURL + "/api/getuserdata");
         const json = await res.json();
         var userdata = new User(json);
         var etd = eventsToDispay(userdata.calendars, new Date());
@@ -186,9 +187,9 @@ class index extends React.Component {
                 calendar.events.push(new Event({ title: this.state.inputing.title, startTime: newStartTime, endTime: newEndTime, color: calendar.color }));
             }
         });
-        await fetch("http://localhost:3000/api/updateuserdata", { method: "post", body: JSON.stringify({ calendars: newdata.calendars }) });
+        await fetch(backendURL + "/api/updateuserdata", { method: "post", body: JSON.stringify({ calendars: newdata.calendars }) });
         this.setState({ creatingEvent: false });
-        const res = await fetch("http://localhost:3000/api/getuserdata");
+        const res = await fetch(backendURL + "/api/getuserdata");
         const json = await res.json();
         var userdata = new User(json);
         var etd = eventsToDispay(userdata.calendars, new Date());
@@ -215,9 +216,9 @@ class index extends React.Component {
                 }
             });
         });
-        await fetch("http://localhost:3000/api/updateuserdata", { method: "post", body: JSON.stringify({ calendars: newdata.calendars }) });
+        await fetch(backendURL + "/api/updateuserdata", { method: "post", body: JSON.stringify({ calendars: newdata.calendars }) });
         this.setState({ editingEvent: false });
-        const res = await fetch("http://localhost:3000/api/getuserdata");
+        const res = await fetch(backendURL + "/api/getuserdata");
         const json = await res.json();
         var userdata = new User(json);
         var etd = eventsToDispay(userdata.calendars, new Date());

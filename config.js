@@ -1,0 +1,1 @@
+export const backendURL = "https://calendar-ten.now.sh";
