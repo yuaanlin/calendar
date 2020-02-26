@@ -1,6 +1,7 @@
 import React from "react";
 import Paper from "@material-ui/core/Paper";
 import { Event } from "../classes";
+import Tooltip from "@material-ui/core/Tooltip";
 
 class EventCard extends React.Component {
     constructor(props) {
@@ -105,7 +106,8 @@ class EventCard extends React.Component {
                     paddingLeft: 16,
                     marginTop: this.props.height != undefined ? 15 : 0,
                     paddingTop: 6,
-                    paddingBottom: 6
+                    paddingBottom: 6,
+                    opacity: this.props.event.ignore != undefined ? 0.2 : 1
                 };
 
                 /** compose event info of card */
@@ -148,20 +150,39 @@ class EventCard extends React.Component {
                         {this.props.event.calendarTitle}
                     </p>
                 );
-                return (
-                    <Paper
-                        style={style}
-                        elevation={this.state.elevation}
-                        onMouseEnter={this.handleMouseOver}
-                        onMouseLeave={this.handleMouseLeave}
-                        onClick={this.handleClick}
-                        key={this.props.event.id}
-                    >
-                        {eventInfo.slice(0, lineAmount).map(info => {
-                            return info;
-                        })}
-                    </Paper>
-                );
+                if (this.props.event.ignore)
+                    return (
+                        <Tooltip title={"該事件已被忽略，原因為" + this.props.event.ignoreReason} placement="right">
+                            <Paper
+                                style={style}
+                                elevation={this.state.elevation}
+                                onMouseEnter={this.handleMouseOver}
+                                onMouseLeave={this.handleMouseLeave}
+                                onClick={this.handleClick}
+                                key={this.props.event.id}
+                            >
+                                {eventInfo.slice(0, lineAmount).map(info => {
+                                    return info;
+                                })}
+                            </Paper>
+                        </Tooltip>
+                    );
+                else {
+                    return (
+                        <Paper
+                            style={style}
+                            elevation={this.state.elevation}
+                            onMouseEnter={this.handleMouseOver}
+                            onMouseLeave={this.handleMouseLeave}
+                            onClick={this.handleClick}
+                            key={this.props.event.id}
+                        >
+                            {eventInfo.slice(0, lineAmount).map(info => {
+                                return info;
+                            })}
+                        </Paper>
+                    );
+                }
             }
         } else {
             console.error("渲染事件卡片時接收到了不符合規範的 Event 物件。");

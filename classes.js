@@ -9,6 +9,8 @@ export class Event {
         this.description = JSONObject.description == undefined ? undefined : JSONObject.description;
         this.id = JSONObject.id == undefined ? generateUUID() : JSONObject.id;
         this.calendarTitle = JSONObject.calendarTitle == undefined ? undefined : JSONObject.calendarTitle;
+        this.ignore = JSONObject.ignore == undefined ? undefined : JSONObject.ignore;
+        this.ignoreReason = JSONObject.ignoreReason == (undefined || "") ? undefined : JSONObject.ignoreReason;
         if (!isEmpty) {
             this.isEmpty = false;
             this.title = JSONObject.title;

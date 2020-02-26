@@ -15,6 +15,8 @@ import InputLabel from "@material-ui/core/InputLabel";
 import Select from "@material-ui/core/Select";
 import Paper from "@material-ui/core/Paper";
 import { Helmet } from "react-helmet";
+import FormControlLabel from "@material-ui/core/FormControlLabel";
+import Switch from "@material-ui/core/Switch";
 
 function startOfDay(date) {
     if (!date instanceof Date) {
@@ -87,7 +89,9 @@ class index extends React.Component {
             inputing: {
                 title: "",
                 date: "",
-                time: ""
+                time: "",
+                ignore: false,
+                ignoreReason: ""
             },
             editingEvent: false,
             creatingEvent: false,
@@ -109,6 +113,8 @@ class index extends React.Component {
         this.handleDateChange = this.handleDateChange.bind(this);
         this.handleTimeChange = this.handleTimeChange.bind(this);
         this.handleCalendarChange = this.handleCalendarChange.bind(this);
+        this.handleIgnoreChange = this.handleIgnoreChange.bind(this);
+        this.handleIgnoreReasonChange = this.handleIgnoreReasonChange.bind(this);
     }
 
     async handleDayClick(day, { selected }) {
@@ -140,7 +146,9 @@ class index extends React.Component {
             inputing: {
                 title: event.title,
                 date: event.startTime.getFullYear() + "/" + event.startTime.getMonth() + "/" + event.startTime.getDate(),
-                time: event.startTime.getHours() + ":" + event.startTime.getMinutes() + "~" + event.endTime.getHours() + ":" + event.endTime.getMinutes()
+                time: event.startTime.getHours() + ":" + event.startTime.getMinutes() + "~" + event.endTime.getHours() + ":" + event.endTime.getMinutes(),
+                ignore: event.ignore == undefined ? false : event.ignore,
+                ignoreReson: event.ignoreReson == undefined ? "" : event.ignoreReson
             }
         });
     }
@@ -197,6 +205,8 @@ class index extends React.Component {
                     event.startTime = newStartTime;
                     event.endTime = newEndTime;
                     event.title = this.state.inputing.title;
+                    event.ignore = this.state.inputing.ignore;
+                    event.ignoreReason = this.state.inputing.ignoreReason;
                 }
             });
         });
@@ -224,6 +234,14 @@ class index extends React.Component {
 
     handleCalendarChange(e) {
         this.state.inputing.calendar = e.target.value;
+    }
+
+    handleIgnoreChange(e) {
+        this.state.inputing.ignore = e.target.checked;
+    }
+
+    handleIgnoreReasonChange(e) {
+        this.state.inputing.ignoreReason = e.target.value;
     }
 
     render() {
@@ -262,8 +280,8 @@ class index extends React.Component {
                     <Grid container>
                         <Grid item xs={4}>
                             <div style={{ marginTop: 80, marginLeft: 28 }}>
-                                <h1 style={{color: "white", marginBottom: 0}}>Reacal</h1>
-                                <p style={{color: "gray", marginTop: 0}}>專注於使用者體驗的日程規劃工具</p>
+                                <h1 style={{ color: "white", marginBottom: 0 }}>Reacal</h1>
+                                <p style={{ color: "gray", marginTop: 0 }}>專注於使用者體驗的日程規劃工具</p>
                             </div>
                             <div style={{ marginTop: 40 }}>
                                 <DayPicker selectedDays={this.state.selectedDay} onDayClick={this.handleDayClick} />
@@ -335,6 +353,18 @@ class index extends React.Component {
                                 label="時間"
                                 fullWidth
                             />
+                            <FormControlLabel
+                                control={<Switch defaultChecked={this.state.inputing.ignore} onChange={this.handleIgnoreChange} />}
+                                label="忽略該事項"
+                            />
+                            <TextField
+                                defaultValue={this.state.selectedEvent.ignoreReason}
+                                margin="dense"
+                                id="name"
+                                label="忽略原因"
+                                fullWidth
+                                onChange={this.handleIgnoreReasonChange}
+                            />
                         </DialogContent>
                         <DialogActions>
                             <Button color="primary" onClick={this.closeEventEditDialog}>
@@ -356,7 +386,9 @@ class index extends React.Component {
                             </FormControl>
                             <TextField autoFocus margin="dense" id="name" label="事件標題" fullWidth onChange={this.handleTitleChange} />
                             <TextField
-                                defaultValue={this.state.selectedDay.getFullYear() + "/" + this.state.selectedDay.getMonth() + "/" + this.state.selectedDay.getDate()}
+                                defaultValue={
+                                    this.state.selectedDay.getFullYear() + "/" + this.state.selectedDay.getMonth() + "/" + this.state.selectedDay.getDate()
+                                }
                                 margin="dense"
                                 id="name"
                                 onChange={this.handleDateChange}

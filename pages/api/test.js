@@ -8,7 +8,7 @@ handler.use(middleware);
 
 handler.get(async (req, res) => {
     let doc = await req.db.collection("userdata", function(err, collection) {
-        if (err) console.log(err);
+        if (err) console.error(err);
         collection.insertOne(
             new User({
                 username: "ken20001207",
