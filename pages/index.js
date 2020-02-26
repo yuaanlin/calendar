@@ -145,7 +145,7 @@ class index extends React.Component {
             editingEvent: true,
             inputing: {
                 title: event.title,
-                date: event.startTime.getFullYear() + "/" + event.startTime.getMonth() + "/" + event.startTime.getDate(),
+                date: event.startTime.getFullYear() + "/" + (event.startTime.getMonth() + 1) + "/" + event.startTime.getDate(),
                 time: event.startTime.getHours() + ":" + event.startTime.getMinutes() + "~" + event.endTime.getHours() + ":" + event.endTime.getMinutes(),
                 ignore: event.ignore == undefined ? false : event.ignore,
                 ignoreReson: event.ignoreReson == undefined ? "" : event.ignoreReson
@@ -160,7 +160,12 @@ class index extends React.Component {
     openEventCreateDialog() {
         this.setState({
             creatingEvent: true,
-            inputing: { date: this.state.selectedDay.getFullYear() + "/" + this.state.selectedDay.getMonth() + "/" + this.state.selectedDay.getDate() }
+            inputing: {
+                title: event.title,
+                date: this.state.selectedDay.getFullYear() + "/" + (this.state.selectedDay.getMonth() + 1) + "/" + this.state.selectedDay.getDate(),
+                time: new Date().getHours() + ":" + new Date().getMinutes() + "~" + (new Date().getHours() + 1) + ":" + new Date().getMinutes(),
+                calendar: this.state.userdata.calendars[0].title
+            }
         });
     }
 
@@ -171,8 +176,8 @@ class index extends React.Component {
     async createEvent() {
         var newStartTime = new Date();
         var newEndTime = new Date();
-        newStartTime.setFullYear(this.state.inputing.date.split("/")[0], this.state.inputing.date.split("/")[1], this.state.inputing.date.split("/")[2]);
-        newEndTime.setFullYear(this.state.inputing.date.split("/")[0], this.state.inputing.date.split("/")[1], this.state.inputing.date.split("/")[2]);
+        newStartTime.setFullYear(this.state.inputing.date.split("/")[0], this.state.inputing.date.split("/")[1] - 1, this.state.inputing.date.split("/")[2]);
+        newEndTime.setFullYear(this.state.inputing.date.split("/")[0], this.state.inputing.date.split("/")[1] - 1, this.state.inputing.date.split("/")[2]);
         newStartTime.setHours(this.state.inputing.time.split("~")[0].split(":")[0], this.state.inputing.time.split("~")[0].split(":")[1]);
         newEndTime.setHours(this.state.inputing.time.split("~")[1].split(":")[0], this.state.inputing.time.split("~")[1].split(":")[1]);
         var newdata = new User(this.state.userdata);
@@ -194,8 +199,8 @@ class index extends React.Component {
     async updateEvent() {
         var newStartTime = new Date();
         var newEndTime = new Date();
-        newStartTime.setFullYear(this.state.inputing.date.split("/")[0], this.state.inputing.date.split("/")[1], this.state.inputing.date.split("/")[2]);
-        newEndTime.setFullYear(this.state.inputing.date.split("/")[0], this.state.inputing.date.split("/")[1], this.state.inputing.date.split("/")[2]);
+        newStartTime.setFullYear(this.state.inputing.date.split("/")[0], this.state.inputing.date.split("/")[1] - 1, this.state.inputing.date.split("/")[2]);
+        newEndTime.setFullYear(this.state.inputing.date.split("/")[0], this.state.inputing.date.split("/")[1] - 1, this.state.inputing.date.split("/")[2]);
         newStartTime.setHours(this.state.inputing.time.split("~")[0].split(":")[0], this.state.inputing.time.split("~")[0].split(":")[1]);
         newEndTime.setHours(this.state.inputing.time.split("~")[1].split(":")[0], this.state.inputing.time.split("~")[1].split(":")[1]);
         var newdata = new User(this.state.userdata);
@@ -327,7 +332,7 @@ class index extends React.Component {
                                 defaultValue={
                                     this.state.selectedEvent.startTime.getFullYear() +
                                     "/" +
-                                    this.state.selectedEvent.startTime.getMonth() +
+                                    (this.state.selectedEvent.startTime.getMonth() + 1) +
                                     "/" +
                                     this.state.selectedEvent.startTime.getDate()
                                 }
@@ -387,7 +392,11 @@ class index extends React.Component {
                             <TextField autoFocus margin="dense" id="name" label="事件標題" fullWidth onChange={this.handleTitleChange} />
                             <TextField
                                 defaultValue={
-                                    this.state.selectedDay.getFullYear() + "/" + this.state.selectedDay.getMonth() + "/" + this.state.selectedDay.getDate()
+                                    this.state.selectedDay.getFullYear() +
+                                    "/" +
+                                    (this.state.selectedDay.getMonth() + 1) +
+                                    "/" +
+                                    this.state.selectedDay.getDate()
                                 }
                                 margin="dense"
                                 id="name"

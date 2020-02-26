@@ -107,7 +107,7 @@ class EventCard extends React.Component {
                     marginTop: this.props.height != undefined ? 15 : 0,
                     paddingTop: 6,
                     paddingBottom: 6,
-                    opacity: this.props.event.ignore != undefined ? 0.2 : 1
+                    opacity: this.props.event.ignore ? 0.2 : 1
                 };
 
                 /** compose event info of card */
@@ -150,7 +150,7 @@ class EventCard extends React.Component {
                         {this.props.event.calendarTitle}
                     </p>
                 );
-                if (this.props.event.ignore)
+                if (this.props.event.ignore == true)
                     return (
                         <Tooltip title={"該事件已被忽略，原因為" + this.props.event.ignoreReason} placement="right">
                             <Paper
