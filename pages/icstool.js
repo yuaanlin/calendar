@@ -1,8 +1,6 @@
 import React from "react";
-import Container from "@material-ui/core/Container";
 import EventCard from "../comps/eventCard";
 import { Event } from "../classes";
-import TextField from "@material-ui/core/TextField";
 
 /** Parse .ics string into event array */
 function toEventArray(lines) {
@@ -79,7 +77,7 @@ class icstool extends React.Component {
             return <EventCard event={event} height={90} key={event.title} />;
         });
         return (
-            <Container maxWidth="xs">
+            <div>
                 <input style={{ marginTop: this.state.events.length == 0 ? 360 : 60 }} type="file" name="file" onChange={this.onChangeHandler} />
                 <div style={{ marginTop: 30, marginBottom: 30, color: "white" }}>{JSON.stringify(this.state.events)}</div>
                 {eventcards}
@@ -101,7 +99,7 @@ class icstool extends React.Component {
                         background: rgb(80, 80, 80);
                     }
                 `}</style>
-            </Container>
+            </div>
         );
     }
 }
