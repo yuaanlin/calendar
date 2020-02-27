@@ -1,7 +1,7 @@
 import React from "react";
-import Paper from "@material-ui/core/Paper";
 import { Event } from "../classes";
-import Tooltip from "@material-ui/core/Tooltip";
+
+import { Whisper, Popover, Panel } from "rsuite";
 
 class EventCard extends React.Component {
     constructor(props) {
@@ -9,22 +9,8 @@ class EventCard extends React.Component {
         this.state = {
             elevation: 0
         };
-        this.handleMouseOver = this.handleMouseOver.bind(this);
-        this.handleMouseLeave = this.handleMouseLeave.bind(this);
         this.handleClick = this.handleClick.bind(this);
         this.handleEmptyCardClick = this.handleEmptyCardClick.bind(this);
-    }
-
-    handleMouseOver() {
-        this.setState({
-            elevation: 20
-        });
-    }
-
-    handleMouseLeave() {
-        this.setState({
-            elevation: 0
-        });
     }
 
     handleClick() {
@@ -104,8 +90,8 @@ class EventCard extends React.Component {
                     backgroundImage: "linear-gradient(315deg, " + this.props.event.color[0] + " 0%, " + this.props.event.color[1] + " 100%)",
                     fontSize: 8,
                     paddingLeft: 16,
+                    paddingTop: 10,
                     marginTop: this.props.height != undefined ? 15 : 0,
-                    paddingTop: 6,
                     paddingBottom: 6,
                     opacity: this.props.event.ignore ? 0.2 : 1
                 };
@@ -152,35 +138,26 @@ class EventCard extends React.Component {
                 );
                 if (this.props.event.ignore == true)
                     return (
-                        <Tooltip title={"該事件已被忽略，原因為" + this.props.event.ignoreReason} placement="right">
-                            <Paper
-                                style={style}
-                                elevation={this.state.elevation}
-                                onMouseEnter={this.handleMouseOver}
-                                onMouseLeave={this.handleMouseLeave}
-                                onClick={this.handleClick}
-                                key={this.props.event.id}
-                            >
+                        <Whisper
+                            placement="right"
+                            delayHide={0}
+                            trigger="hover"
+                            speaker={<Popover>該事件已被忽略，原因為{this.props.event.ignoreReason}</Popover>}
+                        >
+                            <Panel style={style} onClick={this.handleClick} key={this.props.event.id} bodyFill>
                                 {eventInfo.slice(0, lineAmount).map(info => {
                                     return info;
                                 })}
-                            </Paper>
-                        </Tooltip>
+                            </Panel>
+                        </Whisper>
                     );
                 else {
                     return (
-                        <Paper
-                            style={style}
-                            elevation={this.state.elevation}
-                            onMouseEnter={this.handleMouseOver}
-                            onMouseLeave={this.handleMouseLeave}
-                            onClick={this.handleClick}
-                            key={this.props.event.id}
-                        >
+                        <Panel style={style} onClick={this.handleClick} key={this.props.event.id} bodyFill>
                             {eventInfo.slice(0, lineAmount).map(info => {
                                 return info;
                             })}
-                        </Paper>
+                        </Panel>
                     );
                 }
             }

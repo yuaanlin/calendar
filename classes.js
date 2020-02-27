@@ -43,6 +43,7 @@ export class Calendar {
     constructor(JSONObject) {
         this.title = JSONObject.title;
         this.color = JSONObject.color;
+        this.label = this.title;
         this.events = JSONObject.events.map(event => {
             event.calendarTitle = this.title;
             return new Event(event);

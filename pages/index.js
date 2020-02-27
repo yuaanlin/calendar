@@ -1,29 +1,49 @@
 import React from "react";
-import Container from "@material-ui/core/Container";
-import DayView from "../comps/DayView";
-import fetch from "isomorphic-unfetch";
-import Grid from "@material-ui/core/Grid";
-import { User, Calendar, Event } from "../classes";
-import DayPicker from "react-day-picker";
-import TextField from "@material-ui/core/TextField";
-import Dialog from "@material-ui/core/Dialog";
-import Button from "@material-ui/core/Button";
-import DialogActions from "@material-ui/core/DialogActions";
-import DialogContent from "@material-ui/core/DialogContent";
-import FormControl from "@material-ui/core/FormControl";
-import InputLabel from "@material-ui/core/InputLabel";
-import Select from "@material-ui/core/Select";
-import Paper from "@material-ui/core/Paper";
 import { Helmet } from "react-helmet";
-import FormControlLabel from "@material-ui/core/FormControlLabel";
-import Switch from "@material-ui/core/Switch";
+import DayPicker from "react-day-picker";
+import fetch from "isomorphic-unfetch";
+import { Transition } from "react-transition-group";
+
+import DayView from "../comps/DayView";
+import { User, Calendar, Event } from "../classes";
 import { backendURL } from "../config";
+import { getDayDescription } from "../utils/methods";
+
+import {
+    Loader,
+    Panel,
+    Button,
+    Container,
+    FlexboxGrid,
+    Form,
+    FormGroup,
+    FormControl,
+    ControlLabel,
+    CheckboxGroup,
+    Checkbox,
+    Col,
+    SelectPicker,
+    Modal,
+    Avatar
+} from "rsuite";
+
+import "rsuite/lib/styles/themes/dark/index.less";
+
+const duration = 600;
+
+const defaultStyle = {
+    transition: `opacity ${duration}ms ease-in-out`,
+    opacity: 0
+};
+
+const transitionStyles = {
+    entering: { opacity: 1 },
+    entered: { opacity: 1 },
+    exiting: { opacity: 0 },
+    exited: { opacity: 0 }
+};
 
 function startOfDay(date) {
-    if (!date instanceof Date) {
-        console.error("傳入的時間不是合法的 Date 物件。");
-        return null;
-    }
     date = new Date(date);
     var time = new Date();
     time.setTime(date.getTime());
@@ -32,10 +52,6 @@ function startOfDay(date) {
 }
 
 function endOfDay(date) {
-    if (!date instanceof Date) {
-        console.error("傳入的時間不是合法的 Date 物件。");
-        return null;
-    }
     date = new Date(date);
     var time = new Date();
     time.setTime(date.getTime());
@@ -83,6 +99,8 @@ class index extends React.Component {
     constructor(props) {
         super(props);
         this.state = {
+            loaded: false,
+            waiting: false,
             selectedDay: new Date(),
             eventsToDispay: [],
             userdata: {},
@@ -91,7 +109,7 @@ class index extends React.Component {
                 title: "",
                 date: "",
                 time: "",
-                ignore: false,
+                ignore: [],
                 ignoreReason: ""
             },
             editingEvent: false,
@@ -100,7 +118,8 @@ class index extends React.Component {
                 title: "選中的事件",
                 startTime: new Date(),
                 endTime: new Date(),
-                color: ["#fd3721", "#b721ff"]
+                color: ["#fd3721", "#b721ff"],
+                calendarTitle: "哈"
             })
         };
         this.handleDayClick = this.handleDayClick.bind(this);
@@ -110,12 +129,7 @@ class index extends React.Component {
         this.closeEventCreateDialog = this.closeEventCreateDialog.bind(this);
         this.updateEvent = this.updateEvent.bind(this);
         this.createEvent = this.createEvent.bind(this);
-        this.handleTitleChange = this.handleTitleChange.bind(this);
-        this.handleDateChange = this.handleDateChange.bind(this);
-        this.handleTimeChange = this.handleTimeChange.bind(this);
-        this.handleCalendarChange = this.handleCalendarChange.bind(this);
-        this.handleIgnoreChange = this.handleIgnoreChange.bind(this);
-        this.handleIgnoreReasonChange = this.handleIgnoreReasonChange.bind(this);
+        this.handleFormChange = this.handleFormChange.bind(this);
     }
 
     async handleDayClick(day, { selected }) {
@@ -136,7 +150,7 @@ class index extends React.Component {
     componentDidMount() {
         setTimeout(() => {
             var filled = fillEvents(this.props.eventsToDispay, new Date());
-            this.setState({ filled: filled, userdata: this.props.userdata });
+            this.setState({ filled: filled, userdata: this.props.userdata, loaded: true });
         }, 200);
     }
 
@@ -148,8 +162,8 @@ class index extends React.Component {
                 title: event.title,
                 date: event.startTime.getFullYear() + "/" + (event.startTime.getMonth() + 1) + "/" + event.startTime.getDate(),
                 time: event.startTime.getHours() + ":" + event.startTime.getMinutes() + "~" + event.endTime.getHours() + ":" + event.endTime.getMinutes(),
-                ignore: event.ignore == undefined ? false : event.ignore,
-                ignoreReson: event.ignoreReson == undefined ? "" : event.ignoreReson
+                ignore: [event.ignore ? "ignore" : null],
+                ignoreReason: event.ignoreReason == undefined ? "" : event.ignoreReason
             }
         });
     }
@@ -165,7 +179,7 @@ class index extends React.Component {
                 title: event.title,
                 date: this.state.selectedDay.getFullYear() + "/" + (this.state.selectedDay.getMonth() + 1) + "/" + this.state.selectedDay.getDate(),
                 time: new Date().getHours() + ":" + new Date().getMinutes() + "~" + (new Date().getHours() + 1) + ":" + new Date().getMinutes(),
-                calendar: this.state.userdata.calendars[0].title
+                calendar: { label: this.state.userdata.calendars[0].title, value: this.state.userdata.calendars[0] }
             }
         });
     }
@@ -175,6 +189,9 @@ class index extends React.Component {
     }
 
     async createEvent() {
+        this.setState({
+            waiting: true
+        });
         var newStartTime = new Date();
         var newEndTime = new Date();
         newStartTime.setFullYear(this.state.inputing.date.split("/")[0], this.state.inputing.date.split("/")[1] - 1, this.state.inputing.date.split("/")[2]);
@@ -183,7 +200,7 @@ class index extends React.Component {
         newEndTime.setHours(this.state.inputing.time.split("~")[1].split(":")[0], this.state.inputing.time.split("~")[1].split(":")[1]);
         var newdata = new User(this.state.userdata);
         newdata.calendars.map(calendar => {
-            if (calendar.title == this.state.inputing.calendar) {
+            if (calendar.title == this.state.inputing.calendar.label) {
                 calendar.events.push(new Event({ title: this.state.inputing.title, startTime: newStartTime, endTime: newEndTime, color: calendar.color }));
             }
         });
@@ -194,10 +211,13 @@ class index extends React.Component {
         var userdata = new User(json);
         var etd = eventsToDispay(userdata.calendars, new Date());
         var filled = fillEvents(eventsToDispay(userdata.calendars, new Date()), new Date());
-        this.setState({ userdata: userdata, filled: filled, eventsToDispay: etd });
+        this.setState({ userdata: userdata, filled: filled, eventsToDispay: etd, waiting: false });
     }
 
     async updateEvent() {
+        this.setState({
+            waiting: true
+        });
         var newStartTime = new Date();
         var newEndTime = new Date();
         newStartTime.setFullYear(this.state.inputing.date.split("/")[0], this.state.inputing.date.split("/")[1] - 1, this.state.inputing.date.split("/")[2]);
@@ -211,7 +231,7 @@ class index extends React.Component {
                     event.startTime = newStartTime;
                     event.endTime = newEndTime;
                     event.title = this.state.inputing.title;
-                    event.ignore = this.state.inputing.ignore;
+                    event.ignore = this.state.inputing.ignore.includes("ignore") ? true : false;
                     event.ignoreReason = this.state.inputing.ignoreReason;
                 }
             });
@@ -223,454 +243,432 @@ class index extends React.Component {
         var userdata = new User(json);
         var etd = eventsToDispay(userdata.calendars, new Date());
         var filled = fillEvents(eventsToDispay(userdata.calendars, new Date()), new Date());
-        this.setState({ userdata: userdata, filled: filled, eventsToDispay: etd });
+        this.setState({ userdata: userdata, filled: filled, eventsToDispay: etd, waiting: false });
     }
 
-    handleTitleChange(e) {
-        this.state.inputing.title = e.target.value;
-    }
-
-    handleDateChange(e) {
-        this.state.inputing.date = e.target.value;
-    }
-
-    handleTimeChange(e) {
-        this.state.inputing.time = e.target.value;
-    }
-
-    handleCalendarChange(e) {
-        this.state.inputing.calendar = e.target.value;
-    }
-
-    handleIgnoreChange(e) {
-        this.state.inputing.ignore = e.target.checked;
-    }
-
-    handleIgnoreReasonChange(e) {
-        this.state.inputing.ignoreReason = e.target.value;
+    handleFormChange(value) {
+        this.setState({
+            inputing: {
+                ignoreReason: value.ignoreReason,
+                ignore: value.ignore,
+                calendar: value.calendar,
+                time: value.time,
+                date: value.date,
+                title: value.title
+            }
+        });
     }
 
     render() {
+        var DayviewContent = <Loader />;
         if (this.state.userdata.calendars != undefined) {
             var calendarOptions = this.state.userdata.calendars.map(calendar => {
-                return (
-                    <option key={calendar.title} value={calendar.title}>
-                        {calendar.title}
-                    </option>
-                );
+                return { label: calendar.title, value: calendar };
             });
+            if (this.state.inputing.ignore != undefined)
+                var ignoreReason = this.state.inputing.ignore.includes("ignore") ? (
+                    <FormGroup>
+                        <ControlLabel>忽略原因</ControlLabel>
+                        <FormControl name="ignoreReason" />
+                    </FormGroup>
+                ) : null;
             var filled = fillEvents(eventsToDispay(this.state.userdata.calendars, this.state.selectedDay), this.state.selectedDay);
-
-            var dayDescription = "";
-            var DayA = new Date(this.state.selectedDay);
-            var DayB = new Date();
-            DayA.setHours(12, 0, 0);
-            DayB.setHours(12, 0, 0);
-            if (parseInt((DayA - DayB) / 3600000) < 0) {
-                if (parseInt((DayA - DayB) / 3600000) == 0) dayDescription = "今天";
-                else if (parseInt((DayA - DayB) / 3600000) == -24) dayDescription = "昨天";
-                else if (parseInt((DayA - DayB) / 3600000) == -48) dayDescription = "前天";
-                else dayDescription = parseInt((DayA - DayB) / 3600000 / -24) + " 天前";
-            } else {
-                if (parseInt((DayA - DayB) / 3600000) == 0) dayDescription = "今天";
-                else if (parseInt((DayA - DayB) / 3600000) == 23) dayDescription = "明天";
-                else if (parseInt((DayA - DayB) / 3600000) == 47) dayDescription = "後天";
-                else dayDescription = parseInt((DayA - DayB) / 3600000 / 24) + 1 + " 天後";
-            }
-
-            return (
-                <Container maxWidth="md">
-                    <Helmet>
-                        <title>Reacal : 專注於使用者體驗的日程規劃工具</title>
-                    </Helmet>
-                    <Grid container>
-                        <Grid item xs={4}>
-                            <div style={{ marginTop: 80, marginLeft: 28 }}>
-                                <h1 style={{ color: "white", marginBottom: 0 }}>Reacal</h1>
-                                <p style={{ color: "gray", marginTop: 0 }}>專注於使用者體驗的日程規劃工具</p>
-                            </div>
-                            <div style={{ marginTop: 40 }}>
-                                <DayPicker selectedDays={this.state.selectedDay} onDayClick={this.handleDayClick} />
-                            </div>
-                            <div style={{ marginLeft: 28, marginTop: 36 }}>
-                                <h3 style={{ color: "white", marginBottom: 8 }}>
-                                    {this.state.selectedDay.getFullYear()} / {this.state.selectedDay.getMonth() + 1} / {this.state.selectedDay.getDate()}
-                                </h3>
-                                <p style={{ color: "gray", marginTop: 0 }}>{dayDescription}</p>
-                            </div>
-                        </Grid>
-                        <Grid item xs={8}>
-                            <Paper elevation={10} style={{ backgroundColor: "#222222", marginLeft: 60 }}>
-                                <div
-                                    style={{
-                                        overflowY: "scroll",
-                                        maxHeight: "90vh",
-                                        padding: 48
-                                    }}
-                                >
-                                    <DayView
-                                        events={filled}
-                                        openEventEditDialog={this.openEventEditDialog}
-                                        openEventCreateDialog={this.openEventCreateDialog}
-                                    />
-                                </div>
-                            </Paper>
-                        </Grid>
-                    </Grid>
-
-                    <Dialog open={this.state.editingEvent} aria-labelledby="form-dialog-title" width="xs">
-                        <DialogContent>
-                            <TextField
-                                autoFocus
-                                defaultValue={this.state.selectedEvent.title}
-                                margin="dense"
-                                id="name"
-                                label="事件標題"
-                                fullWidth
-                                onChange={this.handleTitleChange}
-                            />
-                            <TextField
-                                defaultValue={
-                                    this.state.selectedEvent.startTime.getFullYear() +
-                                    "/" +
-                                    (this.state.selectedEvent.startTime.getMonth() + 1) +
-                                    "/" +
-                                    this.state.selectedEvent.startTime.getDate()
-                                }
-                                margin="dense"
-                                id="name"
-                                onChange={this.handleDateChange}
-                                label="日期"
-                                fullWidth
-                            />
-                            <TextField
-                                defaultValue={
-                                    this.state.selectedEvent.startTime.getHours() +
-                                    ":" +
-                                    this.state.selectedEvent.startTime.getMinutes() +
-                                    "~" +
-                                    this.state.selectedEvent.endTime.getHours() +
-                                    ":" +
-                                    this.state.selectedEvent.endTime.getMinutes()
-                                }
-                                margin="dense"
-                                id="name"
-                                onChange={this.handleTimeChange}
-                                label="時間"
-                                fullWidth
-                            />
-                            <FormControlLabel
-                                control={<Switch defaultChecked={this.state.inputing.ignore} onChange={this.handleIgnoreChange} />}
-                                label="忽略該事項"
-                            />
-                            <TextField
-                                defaultValue={this.state.selectedEvent.ignoreReason}
-                                margin="dense"
-                                id="name"
-                                label="忽略原因"
-                                fullWidth
-                                onChange={this.handleIgnoreReasonChange}
-                            />
-                        </DialogContent>
-                        <DialogActions>
-                            <Button color="primary" onClick={this.closeEventEditDialog}>
-                                取消
-                            </Button>
-                            <Button color="primary" onClick={this.updateEvent}>
-                                更新
-                            </Button>
-                        </DialogActions>
-                    </Dialog>
-
-                    <Dialog open={this.state.creatingEvent} aria-labelledby="form-dialog-title" width="xs">
-                        <DialogContent>
-                            <FormControl>
-                                <InputLabel htmlFor="demo-dialog-native">行事曆</InputLabel>
-                                <Select native onChange={this.handleCalendarChange}>
-                                    {calendarOptions}
-                                </Select>
-                            </FormControl>
-                            <TextField autoFocus margin="dense" id="name" label="事件標題" fullWidth onChange={this.handleTitleChange} />
-                            <TextField
-                                defaultValue={
-                                    this.state.selectedDay.getFullYear() +
-                                    "/" +
-                                    (this.state.selectedDay.getMonth() + 1) +
-                                    "/" +
-                                    this.state.selectedDay.getDate()
-                                }
-                                margin="dense"
-                                id="name"
-                                onChange={this.handleDateChange}
-                                label="日期"
-                                fullWidth
-                            />
-                            <TextField
-                                defaultValue={
-                                    new Date().getHours() + ":" + new Date().getMinutes() + "~" + (new Date().getHours() + 1) + ":" + new Date().getMinutes()
-                                }
-                                margin="dense"
-                                id="name"
-                                onChange={this.handleTimeChange}
-                                label="時間"
-                                fullWidth
-                            />
-                        </DialogContent>
-                        <DialogActions>
-                            <Button color="primary" onClick={this.closeEventCreateDialog}>
-                                取消
-                            </Button>
-                            <Button color="primary" onClick={this.createEvent}>
-                                創立
-                            </Button>
-                        </DialogActions>
-                    </Dialog>
-
-                    <style global jsx>{`
-                        body {
-                            background: #222222;
-                            margin: 0;
-                        }
-                        ::-webkit-scrollbar {
-                            width: 5px;
-                        }
-                        ::-webkit-scrollbar-track {
-                            -webkit-border-radius: 10px;
-                            border-radius: 10px;
-                            margin: 80px 0 5px 0;
-                        }
-                        ::-webkit-scrollbar-thumb {
-                            -webkit-border-radius: 4px;
-                            border-radius: 4px;
-                            background: rgb(80, 80, 80);
-                        }
-                        /* DayPicker styles */
-
-                        .DayPicker {
-                            display: inline-block;
-                            font-size: 1rem;
-                        }
-
-                        .DayPicker-wrapper {
-                            position: relative;
-
-                            flex-direction: row;
-                            padding-bottom: 1em;
-
-                            -webkit-user-select: none;
-
-                            -moz-user-select: none;
-
-                            -ms-user-select: none;
-
-                            user-select: none;
-                        }
-
-                        .DayPicker-Months {
-                            display: flex;
-                            flex-wrap: wrap;
-                            justify-content: center;
-                        }
-
-                        .DayPicker-Month {
-                            display: table;
-                            margin: 0 1em;
-                            margin-top: 1em;
-                            border-spacing: 0;
-                            border-collapse: collapse;
-
-                            -webkit-user-select: none;
-
-                            -moz-user-select: none;
-
-                            -ms-user-select: none;
-
-                            user-select: none;
-                        }
-
-                        .DayPicker-NavButton {
-                            position: absolute;
-                            top: 1em;
-                            right: 1.5em;
-                            left: auto;
-
-                            display: inline-block;
-                            margin-top: 2px;
-                            width: 1.25em;
-                            height: 1.25em;
-                            background-position: center;
-                            background-size: 50%;
-                            background-repeat: no-repeat;
-                            color: #8b9898;
-                            cursor: pointer;
-                        }
-
-                        .DayPicker-NavButton:hover {
-                            opacity: 0.8;
-                        }
-
-                        .DayPicker-NavButton--prev {
-                            margin-right: 1.5em;
-                            background-image: url("data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACQAAAAwCAYAAAB5R9gVAAAABGdBTUEAALGPC/xhBQAAAVVJREFUWAnN2G0KgjAYwPHpGfRkaZeqvgQaK+hY3SUHrk1YzNLay/OiEFp92I+/Mp2F2Mh2lLISWnflFjzH263RQjzMZ19wgs73ez0o1WmtW+dgA01VxrE3p6l2GLsnBy1VYQOtVSEH/atCCgqpQgKKqYIOiq2CBkqtggLKqQIKgqgCBjpJ2Y5CdJ+zrT9A7HHSTA1dxUdHgzCqJIEwq0SDsKsEg6iqBIEoq/wEcVRZBXFV+QJxV5mBtlDFB5VjYTaGZ2sf4R9PM7U9ZU+lLuaetPP/5Die3ToO1+u+MKtHs06qODB2zBnI/jBd4MPQm1VkY79Tb18gB+C62FdBFsZR6yeIo1YQiLJWMIiqVjQIu1YSCLNWFgijVjYIuhYYCKoWKAiiFgoopxYaKLUWOii2FgkophYp6F3r42W5A9s9OcgNvva8xQaysKXlFytoqdYmQH6tF3toSUo0INq9AAAAAElFTkSuQmCC");
-                        }
-
-                        .DayPicker-NavButton--next {
-                            background-image: url("data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACQAAAAwCAYAAAB5R9gVAAAABGdBTUEAALGPC/xhBQAAAXRJREFUWAnN119ugjAcwPHWzJ1gnmxzB/BBE0n24m4xfNkTaOL7wOtsl3AXMMb+Vjaa1BG00N8fSEibPpAP3xAKKs2yjzTPH9RAjhEo9WzPr/Vm8zgE0+gXATAxxuxtqeJ9t5tIwv5AtQAApsfT6TPdbp+kUBcgVwvO51KqVhMkXKsVJFXrOkigVhCIs1Y4iKlWZxB1rX4gwlpRIIpa8SDkWmggrFq4IIRaJKCYWnSgnrXIQV1r8YD+1Vrn+bReagysIFfLABRt31v8oBu1xEBttfRbltmfjgEcWh9snUS2kNdBK6WN1vrOWxObWsz+fjxevsxmB1GQDfINWiev83nhaoiB/CoOU438oPrhXS0WpQ9xc1ZQWxWHqUYe0I0qrKCQKjygDlXIQV2r0IF6ViEBxVTBBSFUQQNhVYkHIVeJAtkNsbQ7c1LtzP6FsObhb2rCKv7NBIGoq4SDmKoEgTirXAcJVGkFSVVpgoSrXICGUMUH/QBZNSUy5XWUhwAAAABJRU5ErkJggg==");
-                        }
-
-                        .DayPicker-NavButton--interactionDisabled {
-                            display: none;
-                        }
-
-                        .DayPicker-Caption {
-                            display: table-caption;
-                            margin-bottom: 0.5em;
-                            padding: 0 0.5em;
-                            text-align: left;
-                            color: white;
-                        }
-
-                        .DayPicker-Caption > div {
-                            font-weight: 500;
-                            font-size: 1.15em;
-                        }
-
-                        .DayPicker-Weekdays {
-                            display: table-header-group;
-                            margin-top: 1em;
-                        }
-
-                        .DayPicker-WeekdaysRow {
-                            display: table-row;
-                        }
-
-                        .DayPicker-Weekday {
-                            display: table-cell;
-                            padding: 0.5em;
-                            color: #8b9898;
-                            text-align: center;
-                            font-size: 0.875em;
-                        }
-
-                        .DayPicker-Weekday abbr[title] {
-                            border-bottom: none;
-                            text-decoration: none;
-                        }
-
-                        .DayPicker-Body {
-                            display: table-row-group;
-                        }
-
-                        .DayPicker-Week {
-                            display: table-row;
-                        }
-
-                        .DayPicker-Day {
-                            display: table-cell;
-                            padding: 0.5em;
-                            border-radius: 50%;
-                            vertical-align: middle;
-                            text-align: center;
-                            cursor: pointer;
-                            color: gray;
-                        }
-
-                        .DayPicker-WeekNumber {
-                            display: table-cell;
-                            padding: 0.5em;
-                            min-width: 1em;
-                            border-right: 1px solid #eaecec;
-                            color: #8b9898;
-                            vertical-align: middle;
-                            text-align: right;
-                            font-size: 0.75em;
-                            cursor: pointer;
-                        }
-
-                        .DayPicker--interactionDisabled .DayPicker-Day {
-                            cursor: default;
-                        }
-
-                        .DayPicker-Footer {
-                            padding-top: 0.5em;
-                        }
-
-                        .DayPicker-TodayButton {
-                            border: none;
-                            background-color: transparent;
-                            background-image: none;
-                            box-shadow: none;
-                            color: #4a90e2;
-                            font-size: 0.875em;
-                            cursor: pointer;
-                        }
-
-                        .DayPicker-Day--today {
-                            color: white;
-                            font-weight: 700;
-                        }
-
-                        .DayPicker-Day--outside {
-                            color: #8b9898;
-                            cursor: default;
-                        }
-
-                        .DayPicker-Day--disabled {
-                            color: #dce0e0;
-                            cursor: default;
-                            /* background-color: #eff1f1; */
-                        }
-
-                        /* Example modifiers */
-
-                        .DayPicker-Day--sunday {
-                            background-color: #f7f8f8;
-                        }
-
-                        .DayPicker-Day--sunday:not(.DayPicker-Day--today) {
-                            color: #dce0e0;
-                        }
-
-                        .DayPicker-Day--selected:not(.DayPicker-Day--disabled):not(.DayPicker-Day--outside) {
-                            position: relative;
-
-                            background-color: #4a90e2;
-                            color: #f0f8ff;
-                        }
-
-                        .DayPicker-Day--selected:not(.DayPicker-Day--disabled):not(.DayPicker-Day--outside):hover {
-                            background-color: #51a0fa;
-                        }
-
-                        .DayPicker:not(.DayPicker--interactionDisabled)
-                            .DayPicker-Day:not(.DayPicker-Day--disabled):not(.DayPicker-Day--selected):not(.DayPicker-Day--outside):hover {
-                            background-color: #f0f8ff;
-                        }
-
-                        /* DayPickerInput */
-
-                        .DayPickerInput {
-                            display: inline-block;
-                        }
-
-                        .DayPickerInput-OverlayWrapper {
-                            position: relative;
-                        }
-
-                        .DayPickerInput-Overlay {
-                            position: absolute;
-                            left: 0;
-                            z-index: 1;
-
-                            background: white;
-                            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.15);
-                        }
-                    `}</style>
-                </Container>
-            );
-        } else {
-            return <p>loading</p>;
+            DayviewContent = <DayView events={filled} openEventEditDialog={this.openEventEditDialog} openEventCreateDialog={this.openEventCreateDialog} />;
         }
+
+        var dayDescription = getDayDescription(this.state.selectedDay);
+
+        return (
+            <Container>
+                <Helmet>
+                    <title>Reacal : 專注於使用者體驗的日程規劃工具</title>
+                </Helmet>
+
+                <FlexboxGrid justify="center">
+                    <FlexboxGrid.Item componentClass={Col} colspan={24} xs={20} sm={18} md={12}>
+                        <FlexboxGrid justify="space-around">
+                            <FlexboxGrid.Item colspan={7}>
+                                <div style={{ marginTop: 80, marginLeft: 28 }}>
+                                    <h1 style={{ color: "white", marginBottom: 0 }}>Reacal</h1>
+                                    <p style={{ color: "gray", marginTop: 0 }}>專注於使用者體驗的日程規劃工具</p>
+                                </div>
+                                <div style={{ marginTop: 40 }}>
+                                    <DayPicker selectedDays={this.state.selectedDay} onDayClick={this.handleDayClick} />
+                                </div>
+                                <div style={{ marginLeft: 28, marginTop: 36 }}>
+                                    <h3 style={{ color: "white", marginBottom: 8 }}>
+                                        {this.state.selectedDay.getFullYear()} / {this.state.selectedDay.getMonth() + 1} / {this.state.selectedDay.getDate()}
+                                    </h3>
+                                    <p style={{ color: "gray", marginTop: 0 }}>{dayDescription}</p>
+                                </div>
+                            </FlexboxGrid.Item>
+                            <FlexboxGrid.Item colspan={14}>
+                                <Panel elevation={10} style={{ backgroundColor: "#222222", marginLeft: 60 }} bodyFill>
+                                    <div
+                                        style={{
+                                            overflowY: "scroll",
+                                            maxHeight: "100vh",
+                                            padding: 48
+                                        }}
+                                    >
+                                        <Transition in={this.state.loaded} timeout={duration}>
+                                            {state => (
+                                                <div
+                                                    style={{
+                                                        ...defaultStyle,
+                                                        ...transitionStyles[state]
+                                                    }}
+                                                >
+                                                    {DayviewContent}
+                                                </div>
+                                            )}
+                                        </Transition>
+                                    </div>
+                                </Panel>
+                            </FlexboxGrid.Item>
+                        </FlexboxGrid>
+                    </FlexboxGrid.Item>
+                </FlexboxGrid>
+
+                <Modal show={this.state.editingEvent} aria-labelledby="form-dialog-title" width="xs">
+                    <Modal.Header closeButton onClick={this.closeEventEditDialog}>
+                        <Avatar
+                            style={{
+                                backgroundImage:
+                                    "linear-gradient(315deg, " + this.state.selectedEvent.color[0] + " 0%, " + this.state.selectedEvent.color[1] + " 100%)",
+                                color: "#ffffff"
+                            }}
+                        >
+                            {this.state.selectedEvent.calendarTitle.charAt(0)}
+                        </Avatar>{" "}
+                        <h5 style={{ marginLeft: 6, display: "inline-block" }}>{this.state.selectedEvent.calendarTitle}</h5>
+                    </Modal.Header>
+                    <Modal.Body>
+                        <Form formValue={this.state.inputing} onChange={this.handleFormChange}>
+                            <FormGroup>
+                                <ControlLabel>事件標題</ControlLabel>
+                                <FormControl name="title" />
+                            </FormGroup>
+                            <FormGroup>
+                                <ControlLabel>日期</ControlLabel>
+                                <FormControl name="date" />
+                            </FormGroup>
+                            <FormGroup>
+                                <ControlLabel>時間</ControlLabel>
+                                <FormControl name="time" />
+                            </FormGroup>
+                            <FormGroup>
+                                <FormControl accepter={CheckboxGroup} name="ignore">
+                                    <Checkbox value="ignore">忽略該事項</Checkbox>
+                                </FormControl>
+                            </FormGroup>
+                            <FormGroup>{ignoreReason}</FormGroup>
+                        </Form>
+                    </Modal.Body>
+                    <Modal.Footer>
+                        <Button onClick={this.closeEventEditDialog}>取消</Button>
+                        <Button appearance="primary" onClick={this.updateEvent} loading={this.state.waiting}>
+                            更新
+                        </Button>
+                    </Modal.Footer>
+                </Modal>
+
+                <Modal show={this.state.creatingEvent} aria-labelledby="form-dialog-title" width="xs">
+                    <Modal.Header closeButton onClick={this.closeEventCreateDialog}></Modal.Header>
+                    <Modal.Body>
+                        <Form formValue={this.state.inputing} onChange={this.handleFormChange}>
+                            <FormGroup>
+                                <ControlLabel>行事曆</ControlLabel>
+                                <FormControl name="calendar" data={calendarOptions} accepter={SelectPicker} />
+                            </FormGroup>
+                            <FormGroup>
+                                <ControlLabel>事件標題</ControlLabel>
+                                <FormControl name="title" />
+                            </FormGroup>
+                            <FormGroup>
+                                <ControlLabel>日期</ControlLabel>
+                                <FormControl name="date" />
+                            </FormGroup>
+                            <FormGroup>
+                                <ControlLabel>時間</ControlLabel>
+                                <FormControl name="time" />
+                            </FormGroup>
+                        </Form>
+                    </Modal.Body>
+                    <Modal.Footer>
+                        <Button onClick={this.closeEventCreateDialog}>取消</Button>
+                        <Button appearance="primary" onClick={this.createEvent} loading={this.state.waiting}>
+                            創立
+                        </Button>
+                    </Modal.Footer>
+                </Modal>
+
+                <style global jsx>{`
+                    .fade-enter,
+                    .fade-appear {
+                        opacity: 0;
+                    }
+                    .fade-enter-active,
+                    .fade-appear-active {
+                        opacity: 1;
+                        transition: opacity 1s ease-in;
+                    }
+                    .fade-enter-done {
+                        opacity: 1;
+                    }
+                    .fade-exit {
+                        opacity: 1;
+                    }
+
+                    .fade-exit-active {
+                        opacity: 0;
+                        transition: opacity 1s ease-in;
+                    }
+
+                    .fade-exit-done {
+                        opacity: 0;
+                    }
+                    body {
+                        background: #222222;
+                        margin: 0;
+                    }
+                    ::-webkit-scrollbar {
+                        width: 5px;
+                    }
+                    ::-webkit-scrollbar-track {
+                        -webkit-border-radius: 10px;
+                        border-radius: 10px;
+                        margin: 80px 0 5px 0;
+                    }
+                    ::-webkit-scrollbar-thumb {
+                        -webkit-border-radius: 4px;
+                        border-radius: 4px;
+                        background: rgb(80, 80, 80);
+                    }
+                    /* DayPicker styles */
+
+                    .DayPicker {
+                        display: inline-block;
+                        font-size: 1rem;
+                    }
+
+                    .DayPicker-wrapper {
+                        position: relative;
+
+                        flex-direction: row;
+                        padding-bottom: 1em;
+
+                        -webkit-user-select: none;
+
+                        -moz-user-select: none;
+
+                        -ms-user-select: none;
+
+                        user-select: none;
+                    }
+
+                    .DayPicker-Months {
+                        display: flex;
+                        flex-wrap: wrap;
+                        justify-content: center;
+                    }
+
+                    .DayPicker-Month {
+                        display: table;
+                        margin: 0 1em;
+                        margin-top: 1em;
+                        border-spacing: 0;
+                        border-collapse: collapse;
+
+                        -webkit-user-select: none;
+
+                        -moz-user-select: none;
+
+                        -ms-user-select: none;
+
+                        user-select: none;
+                    }
+
+                    .DayPicker-NavButton {
+                        position: absolute;
+                        top: 1em;
+                        right: 1.5em;
+                        left: auto;
+
+                        display: inline-block;
+                        margin-top: 2px;
+                        width: 1.25em;
+                        height: 1.25em;
+                        background-position: center;
+                        background-size: 50%;
+                        background-repeat: no-repeat;
+                        color: #8b9898;
+                        cursor: pointer;
+                    }
+
+                    .DayPicker-NavButton:hover {
+                        opacity: 0.8;
+                    }
+
+                    .DayPicker-NavButton--prev {
+                        margin-right: 1.5em;
+                        background-image: url("data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACQAAAAwCAYAAAB5R9gVAAAABGdBTUEAALGPC/xhBQAAAVVJREFUWAnN2G0KgjAYwPHpGfRkaZeqvgQaK+hY3SUHrk1YzNLay/OiEFp92I+/Mp2F2Mh2lLISWnflFjzH263RQjzMZ19wgs73ez0o1WmtW+dgA01VxrE3p6l2GLsnBy1VYQOtVSEH/atCCgqpQgKKqYIOiq2CBkqtggLKqQIKgqgCBjpJ2Y5CdJ+zrT9A7HHSTA1dxUdHgzCqJIEwq0SDsKsEg6iqBIEoq/wEcVRZBXFV+QJxV5mBtlDFB5VjYTaGZ2sf4R9PM7U9ZU+lLuaetPP/5Die3ToO1+u+MKtHs06qODB2zBnI/jBd4MPQm1VkY79Tb18gB+C62FdBFsZR6yeIo1YQiLJWMIiqVjQIu1YSCLNWFgijVjYIuhYYCKoWKAiiFgoopxYaKLUWOii2FgkophYp6F3r42W5A9s9OcgNvva8xQaysKXlFytoqdYmQH6tF3toSUo0INq9AAAAAElFTkSuQmCC");
+                    }
+
+                    .DayPicker-NavButton--next {
+                        background-image: url("data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACQAAAAwCAYAAAB5R9gVAAAABGdBTUEAALGPC/xhBQAAAXRJREFUWAnN119ugjAcwPHWzJ1gnmxzB/BBE0n24m4xfNkTaOL7wOtsl3AXMMb+Vjaa1BG00N8fSEibPpAP3xAKKs2yjzTPH9RAjhEo9WzPr/Vm8zgE0+gXATAxxuxtqeJ9t5tIwv5AtQAApsfT6TPdbp+kUBcgVwvO51KqVhMkXKsVJFXrOkigVhCIs1Y4iKlWZxB1rX4gwlpRIIpa8SDkWmggrFq4IIRaJKCYWnSgnrXIQV1r8YD+1Vrn+bReagysIFfLABRt31v8oBu1xEBttfRbltmfjgEcWh9snUS2kNdBK6WN1vrOWxObWsz+fjxevsxmB1GQDfINWiev83nhaoiB/CoOU438oPrhXS0WpQ9xc1ZQWxWHqUYe0I0qrKCQKjygDlXIQV2r0IF6ViEBxVTBBSFUQQNhVYkHIVeJAtkNsbQ7c1LtzP6FsObhb2rCKv7NBIGoq4SDmKoEgTirXAcJVGkFSVVpgoSrXICGUMUH/QBZNSUy5XWUhwAAAABJRU5ErkJggg==");
+                    }
+
+                    .DayPicker-NavButton--interactionDisabled {
+                        display: none;
+                    }
+
+                    .DayPicker-Caption {
+                        display: table-caption;
+                        margin-bottom: 0.5em;
+                        padding: 0 0.5em;
+                        text-align: left;
+                        color: white;
+                    }
+
+                    .DayPicker-Caption > div {
+                        font-weight: 500;
+                        font-size: 1.15em;
+                    }
+
+                    .DayPicker-Weekdays {
+                        display: table-header-group;
+                        margin-top: 1em;
+                    }
+
+                    .DayPicker-WeekdaysRow {
+                        display: table-row;
+                    }
+
+                    .DayPicker-Weekday {
+                        display: table-cell;
+                        padding: 0.5em;
+                        color: #8b9898;
+                        text-align: center;
+                        font-size: 0.875em;
+                    }
+
+                    .DayPicker-Weekday abbr[title] {
+                        border-bottom: none;
+                        text-decoration: none;
+                    }
+
+                    .DayPicker-Body {
+                        display: table-row-group;
+                    }
+
+                    .DayPicker-Week {
+                        display: table-row;
+                    }
+
+                    .DayPicker-Day {
+                        display: table-cell;
+                        padding: 0.5em;
+                        border-radius: 50%;
+                        vertical-align: middle;
+                        text-align: center;
+                        cursor: pointer;
+                        color: gray;
+                    }
+
+                    .DayPicker-WeekNumber {
+                        display: table-cell;
+                        padding: 0.5em;
+                        min-width: 1em;
+                        border-right: 1px solid #eaecec;
+                        color: #8b9898;
+                        vertical-align: middle;
+                        text-align: right;
+                        font-size: 0.75em;
+                        cursor: pointer;
+                    }
+
+                    .DayPicker--interactionDisabled .DayPicker-Day {
+                        cursor: default;
+                    }
+
+                    .DayPicker-Footer {
+                        padding-top: 0.5em;
+                    }
+
+                    .DayPicker-TodayButton {
+                        border: none;
+                        background-color: transparent;
+                        background-image: none;
+                        box-shadow: none;
+                        color: #4a90e2;
+                        font-size: 0.875em;
+                        cursor: pointer;
+                    }
+
+                    .DayPicker-Day--today {
+                        color: white;
+                        font-weight: 700;
+                    }
+
+                    .DayPicker-Day--outside {
+                        color: #8b9898;
+                        cursor: default;
+                    }
+
+                    .DayPicker-Day--disabled {
+                        color: #dce0e0;
+                        cursor: default;
+                        /* background-color: #eff1f1; */
+                    }
+
+                    /* Example modifiers */
+
+                    .DayPicker-Day--sunday {
+                        background-color: #f7f8f8;
+                    }
+
+                    .DayPicker-Day--sunday:not(.DayPicker-Day--today) {
+                        color: #dce0e0;
+                    }
+
+                    .DayPicker-Day--selected:not(.DayPicker-Day--disabled):not(.DayPicker-Day--outside) {
+                        position: relative;
+
+                        background-color: #4a90e2;
+                        color: #f0f8ff;
+                    }
+
+                    .DayPicker-Day--selected:not(.DayPicker-Day--disabled):not(.DayPicker-Day--outside):hover {
+                        background-color: #51a0fa;
+                    }
+
+                    .DayPicker:not(.DayPicker--interactionDisabled)
+                        .DayPicker-Day:not(.DayPicker-Day--disabled):not(.DayPicker-Day--selected):not(.DayPicker-Day--outside):hover {
+                        background-color: #f0f8ff;
+                    }
+
+                    /* DayPickerInput */
+
+                    .DayPickerInput {
+                        display: inline-block;
+                    }
+
+                    .DayPickerInput-OverlayWrapper {
+                        position: relative;
+                    }
+
+                    .DayPickerInput-Overlay {
+                        position: absolute;
+                        left: 0;
+                        z-index: 1;
+
+                        background: white;
+                        box-shadow: 0 2px 5px rgba(0, 0, 0, 0.15);
+                    }
+                `}</style>
+            </Container>
+        );
     }
 }
 
