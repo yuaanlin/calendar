@@ -205,13 +205,12 @@ class index extends React.Component {
             }
         });
         await fetch(backendURL + "/api/updateuserdata", { method: "post", body: JSON.stringify({ calendars: newdata.calendars }) });
-        this.setState({ creatingEvent: false });
         const res = await fetch(backendURL + "/api/getuserdata");
         const json = await res.json();
         var userdata = new User(json);
         var etd = eventsToDispay(userdata.calendars, new Date());
         var filled = fillEvents(eventsToDispay(userdata.calendars, new Date()), new Date());
-        this.setState({ userdata: userdata, filled: filled, eventsToDispay: etd, waiting: false });
+        this.setState({ userdata: userdata, filled: filled, eventsToDispay: etd, waiting: false, creatingEvent: false });
     }
 
     async updateEvent() {
@@ -237,13 +236,12 @@ class index extends React.Component {
             });
         });
         await fetch(backendURL + "/api/updateuserdata", { method: "post", body: JSON.stringify({ calendars: newdata.calendars }) });
-        this.setState({ editingEvent: false });
         const res = await fetch(backendURL + "/api/getuserdata");
         const json = await res.json();
         var userdata = new User(json);
         var etd = eventsToDispay(userdata.calendars, new Date());
         var filled = fillEvents(eventsToDispay(userdata.calendars, new Date()), new Date());
-        this.setState({ userdata: userdata, filled: filled, eventsToDispay: etd, waiting: false });
+        this.setState({ userdata: userdata, filled: filled, eventsToDispay: etd, waiting: false, editingEvent: false });
     }
 
     handleFormChange(value) {
@@ -374,7 +372,9 @@ class index extends React.Component {
                 </Modal>
 
                 <Modal show={this.state.creatingEvent} aria-labelledby="form-dialog-title" width="xs">
-                    <Modal.Header closeButton onClick={this.closeEventCreateDialog}></Modal.Header>
+                    <Modal.Header closeButton onClick={this.closeEventCreateDialog}>
+                        <h5>創建新事件</h5>
+                    </Modal.Header>
                     <Modal.Body>
                         <Form formValue={this.state.inputing} onChange={this.handleFormChange}>
                             <FormGroup>
