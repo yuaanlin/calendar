@@ -160,11 +160,15 @@ class index extends React.Component {
     }
 
     static async getInitialProps() {
-        const res = await fetch(backendURL + "/api/getuserdata");
-        const json = await res.json();
-        var userdata = new User(json);
-        var etd = eventsToDispay(userdata.calendars, new Date());
-        var filled = fillEvents(eventsToDispay(userdata.calendars, new Date()), new Date());
+        try {
+            const res = await fetch(backendURL + "/api/getuserdata");
+            const json = await res.json();
+            var userdata = new User(json);
+            var etd = eventsToDispay(userdata.calendars, new Date());
+            var filled = fillEvents(eventsToDispay(userdata.calendars, new Date()), new Date());
+        } catch (err) {
+            displayError("發生錯誤 T_T", err);
+        }
         return { userdata: userdata, filled: filled, eventsToDispay: etd };
     }
 
