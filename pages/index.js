@@ -164,7 +164,7 @@ class index extends React.Component {
         // 更新視圖
         var etd = eventsToDispay(newdata.calendars, new Date());
         var filled = fillEvents(eventsToDispay(newdata.calendars, new Date()), new Date());
-        this.setState({ userdata: userdata, filled: filled, eventsToDispay: etd, waiting: false, creatingEvent: false });
+        this.setState({ userdata: newdata, filled: filled, eventsToDispay: etd, waiting: false, creatingEvent: false });
 
         // 上傳更新到資料庫
         var res = null;
@@ -173,9 +173,7 @@ class index extends React.Component {
         } catch (err) {
             displayError("對不起 ... 發生技術性問題啦 T_T", "創建新事件時發生了一些問題，希望你可以與我們聯絡來幫助我們改進 !");
         } finally {
-            if (res.status != 200) {
-                displayError("對不起 ... 發生技術性問題啦 T_T", "創建新事件時發生了一些問題，希望你可以與我們聯絡來幫助我們改進 !");
-            }
+            if (res.status != 200) displayError("對不起 ... 發生技術性問題啦 T_T", "創建新事件時發生了一些問題，希望你可以與我們聯絡來幫助我們改進 !");
         }
     }
 
