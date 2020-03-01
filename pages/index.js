@@ -169,7 +169,7 @@ class index extends React.Component {
         // 上傳更新到資料庫
         var res = null;
         try {
-            res = fetch(backendURL + "/api/updateuserdata", { method: "post", body: JSON.stringify({ calendars: newdata.calendars }) });
+            res = await fetch(backendURL + "/api/updateuserdata", { method: "post", body: JSON.stringify({ calendars: newdata.calendars }) });
         } catch (err) {
             displayError("對不起 ... 發生技術性問題啦 T_T", "創建新事件時發生了一些問題，希望你可以與我們聯絡來幫助我們改進 !");
         } finally {
@@ -303,17 +303,21 @@ class index extends React.Component {
             });
             if (targetEvent != null) calendar.events.splice(calendar.events.indexOf(targetEvent), 1);
         });
+
+        // 更新視圖
+        var etd = eventsToDispay(newdata.calendars, new Date());
+        var filled = fillEvents(eventsToDispay(newdata.calendars, new Date()), new Date());
+        this.setState({ userdata: newdata, filled: filled, eventsToDispay: etd, removing: false, editingEvent: false });
+
+        // 上傳變更到資料庫
+        var res = null;
         try {
-            await fetch(backendURL + "/api/updateuserdata", { method: "post", body: JSON.stringify({ calendars: newdata.calendars }) });
+            res = await fetch(backendURL + "/api/updateuserdata", { method: "post", body: JSON.stringify({ calendars: newdata.calendars }) });
         } catch (err) {
             displayError("對不起 ... 發生技術性問題啦 T_T", "刪除事件時發生了一些問題，希望你可以與我們聯絡來幫助我們改進 !");
+        } finally {
+            if (res.status != 200) displayError("對不起 ... 發生技術性問題啦 T_T", "刪除事件時發生了一些問題，希望你可以與我們聯絡來幫助我們改進 !");
         }
-        const res = await fetch(backendURL + "/api/getuserdata");
-        const json = await res.json();
-        var userdata = new User(json);
-        var etd = eventsToDispay(userdata.calendars, new Date());
-        var filled = fillEvents(eventsToDispay(userdata.calendars, new Date()), new Date());
-        this.setState({ userdata: userdata, filled: filled, eventsToDispay: etd, removing: false, editingEvent: false });
     }
 
     handleFormChange(value) {
