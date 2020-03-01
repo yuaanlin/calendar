@@ -11,6 +11,7 @@ export class Event {
         this.calendarTitle = JSONObject.calendarTitle == undefined ? undefined : JSONObject.calendarTitle;
         this.ignore = JSONObject.ignore == undefined ? undefined : JSONObject.ignore;
         this.ignoreReason = JSONObject.ignoreReason == (undefined || "") ? undefined : JSONObject.ignoreReason;
+        this.repeatID = JSONObject.repeatID == undefined ? undefined : JSONObject.repeatID;
         if (!isEmpty) {
             this.isEmpty = false;
             this.title = JSONObject.title;
@@ -39,6 +40,20 @@ export class Event {
     }
 }
 
+export class Repeat {
+    constructor(JSONObject) {
+        this.id = JSONObject.id == undefined ? generateUUID() : JSONObject.id;
+        this.name = JSONObject.name;
+        this.startDate = new Date(JSONObject.startDate);
+        this.endDate = new Date(JSONObject.endDate);
+        this.startTime = new Date(JSONObject.startTime);
+        this.endTime = new Date(JSONObject.endTime);
+        this.cycle = JSONObject.cycle;
+        this.repeatData = JSONObject.repeatData;
+        this.generated = JSONObject.generated == undefined ? [] : JSONObject.generated;
+    }
+}
+
 export class Calendar {
     constructor(JSONObject) {
         this.title = JSONObject.title;
@@ -48,6 +63,10 @@ export class Calendar {
             event.calendarTitle = this.title;
             return new Event(event);
         });
+        this.repeats = JSONObject.repeats == undefined ? [] : JSONObject.repeats.map(repeat => {
+            repeat.calendarTitle = this.title;
+            return new Repeat(repeat);
+        });;
     }
 }
 

@@ -6,113 +6,17 @@ import { Transition } from "react-transition-group";
 
 import DayView from "../comps/DayView";
 import AllDayEvents from "../comps/AllDayEvents";
-import { User, Calendar, Event } from "../classes";
-import { backendURL } from "../config";
-import { getDayDescription, displayError } from "../utils/methods";
+import EditEventDialog from "../comps/EditEventDialog";
+import CreateEventDialog from "../comps/CreateEventDialog";
+import CreateRepeatDialog from "../comps/CreateRepeatDialog";
+import { User, Event, Repeat } from "../classes";
+import { backendURL, duration, defaultStyle, transitionStyles } from "../config";
+import { getDayDescription, displayError, eventsToDispay, allDayEventsToDispay, fillEvents, buildRepeatToEvent } from "../utils/methods";
 
-import {
-    Loader,
-    Panel,
-    Button,
-    Container,
-    FlexboxGrid,
-    Form,
-    FormGroup,
-    FormControl,
-    ControlLabel,
-    CheckboxGroup,
-    Checkbox,
-    Col,
-    SelectPicker,
-    Modal,
-    Avatar
-} from "rsuite";
+import { Loader, Panel, Container, FlexboxGrid, Col } from "rsuite";
 
 import "rsuite/lib/styles/themes/dark/index.less";
-
-const duration = 600;
-
-const defaultStyle = {
-    transition: `opacity ${duration}ms ease-in-out`,
-    opacity: 0
-};
-
-const transitionStyles = {
-    entering: { opacity: 1 },
-    entered: { opacity: 1 },
-    exiting: { opacity: 0 },
-    exited: { opacity: 0 }
-};
-
-function startOfDay(date) {
-    date = new Date(date);
-    var time = new Date();
-    time.setTime(date.getTime());
-    time.setHours(0, 0, 0);
-    return time;
-}
-
-function endOfDay(date) {
-    date = new Date(date);
-    var time = new Date();
-    time.setTime(date.getTime());
-    time.setHours(23, 59, 59);
-    return time;
-}
-
-function fillEvents(events, date) {
-    var filled = new Array();
-    var time = startOfDay(date);
-    events.map(event => {
-        var startTime = new Date(event.startTime);
-        var endTime = new Date(event.endTime);
-        if (startTime.getHours() > endTime.getHours()) {
-            endTime.setHours(23, 59, 59);
-        }
-        filled.push(new Event({ startTime: time, endTime: startTime }, true));
-        filled.push(event);
-        time.setTime(endTime.getTime());
-    });
-    filled.push(new Event({ startTime: time, endTime: endOfDay(date) }, true));
-    return filled;
-}
-
-function eventsToDispay(calendars, date) {
-    var eventsToDispay = [];
-    calendars.map(calendar => {
-        calendar = new Calendar(calendar);
-        calendar.events.map(event => {
-            if (
-                event.startTime.getFullYear() == date.getFullYear() &&
-                event.startTime.getMonth() == date.getMonth() &&
-                event.startTime.getDate() == date.getDate() &&
-                !event.isAllDayEvent()
-            ) {
-                eventsToDispay.push(event);
-            }
-        });
-    });
-    eventsToDispay.sort((a, b) => a.startTime - b.startTime);
-    return eventsToDispay;
-}
-
-function allDayEventsToDispay(calendars, date) {
-    var allDayEventsToDispay = [];
-    calendars.map(calendar => {
-        calendar = new Calendar(calendar);
-        calendar.events.map(event => {
-            if (
-                event.startTime.getFullYear() == date.getFullYear() &&
-                event.startTime.getMonth() == date.getMonth() &&
-                event.startTime.getDate() == date.getDate() &&
-                event.isAllDayEvent()
-            ) {
-                allDayEventsToDispay.push(event);
-            }
-        });
-    });
-    return allDayEventsToDispay;
-}
+import "../style.less";
 
 class index extends React.Component {
     constructor(props) {
@@ -125,13 +29,6 @@ class index extends React.Component {
             eventsToDispay: [],
             userdata: {},
             filled: [],
-            inputing: {
-                title: "",
-                date: "",
-                time: "",
-                ignore: [],
-                ignoreReason: ""
-            },
             editingEvent: false,
             creatingEvent: false,
             selectedEvent: new Event({
@@ -147,15 +44,21 @@ class index extends React.Component {
         this.closeEventEditDialog = this.closeEventEditDialog.bind(this);
         this.openEventCreateDialog = this.openEventCreateDialog.bind(this);
         this.closeEventCreateDialog = this.closeEventCreateDialog.bind(this);
+        this.openRepeatCreateDialog = this.openRepeatCreateDialog.bind(this);
+        this.closeRepeatCreateDialog = this.closeRepeatCreateDialog.bind(this);
         this.updateEvent = this.updateEvent.bind(this);
         this.createEvent = this.createEvent.bind(this);
+        this.createRepeat = this.createRepeat.bind(this);
         this.removeEvent = this.removeEvent.bind(this);
         this.handleFormChange = this.handleFormChange.bind(this);
     }
 
     async handleDayClick(day, { selected }) {
+        var newdata = buildRepeatToEvent(this.state.userdata, day);
+        await fetch(backendURL + "/api/updateuserdata", { method: "post", body: JSON.stringify({ calendars: newdata.calendars }) });
         this.setState({
-            selectedDay: selected ? new Date() : day
+            selectedDay: selected ? new Date() : day,
+            userdata: newdata
         });
     }
 
@@ -202,13 +105,34 @@ class index extends React.Component {
         this.setState({
             creatingEvent: true,
             inputing: {
-                title: event.title,
+                title: "",
                 date: this.state.selectedDay.getFullYear() + "/" + (this.state.selectedDay.getMonth() + 1) + "/" + this.state.selectedDay.getDate(),
                 time: new Date().getHours() + ":" + new Date().getMinutes() + "~" + (new Date().getHours() + 1) + ":" + new Date().getMinutes(),
                 calendar: { label: this.state.userdata.calendars[0].title, value: this.state.userdata.calendars[0] },
                 allday: [null]
             }
         });
+    }
+
+    openRepeatCreateDialog() {
+        this.setState({
+            creatingEvent: false,
+            creatingRepeat: true,
+            inputing: {
+                title: "",
+                startdate: this.state.selectedDay.getFullYear() + "/" + (this.state.selectedDay.getMonth() + 1) + "/" + this.state.selectedDay.getDate(),
+                enddate: this.state.selectedDay.getFullYear() + "/" + (this.state.selectedDay.getMonth() + 1) + "/" + this.state.selectedDay.getDate(),
+                cycle: "Week",
+                repeatData: "",
+                time: new Date().getHours() + ":" + new Date().getMinutes() + "~" + (new Date().getHours() + 1) + ":" + new Date().getMinutes(),
+                calendar: { label: this.state.userdata.calendars[0].title, value: this.state.userdata.calendars[0] },
+                allday: [null]
+            }
+        });
+    }
+
+    closeRepeatCreateDialog() {
+        this.setState({ creatingRepeat: false });
     }
 
     closeEventCreateDialog() {
@@ -241,12 +165,75 @@ class index extends React.Component {
         } catch (err) {
             displayError("對不起 ... 發生技術性問題啦 T_T", "創建新事件時發生了一些問題，希望你可以與我們聯絡來幫助我們改進 !");
         }
-        const res = await fetch(backendURL + "/api/getuserdata");
-        const json = await res.json();
-        var userdata = new User(json);
-        var etd = eventsToDispay(userdata.calendars, new Date());
-        var filled = fillEvents(eventsToDispay(userdata.calendars, new Date()), new Date());
-        this.setState({ userdata: userdata, filled: filled, eventsToDispay: etd, waiting: false, creatingEvent: false });
+        if (res.status == 200) {
+            var etd = eventsToDispay(newdata.calendars, new Date());
+            var filled = fillEvents(eventsToDispay(newdata.calendars, new Date()), new Date());
+            this.setState({ userdata: userdata, filled: filled, eventsToDispay: etd, waiting: false, creatingEvent: false });
+        } else {
+            displayError("對不起 ... 發生技術性問題啦 T_T", "創建新系列時發生了一些問題，希望你可以與我們聯絡來幫助我們改進 !");
+        }
+    }
+
+    async createRepeat() {
+        this.setState({
+            waiting: true
+        });
+        var startDate = new Date();
+        var endDate = new Date();
+        startDate.setFullYear(
+            this.state.inputing.startDate.split("/")[0],
+            this.state.inputing.startDate.split("/")[1] - 1,
+            this.state.inputing.startDate.split("/")[2]
+        );
+        endDate.setFullYear(this.state.inputing.endDate.split("/")[0], this.state.inputing.endDate.split("/")[1] - 1, this.state.inputing.endDate.split("/")[2]);
+        var newStartTime = new Date();
+        var newEndTime = new Date();
+        newStartTime.setFullYear(
+            this.state.inputing.startDate.split("/")[0],
+            this.state.inputing.startDate.split("/")[1] - 1,
+            this.state.inputing.startDate.split("/")[2]
+        );
+        newEndTime.setFullYear(
+            this.state.inputing.startDate.split("/")[0],
+            this.state.inputing.startDate.split("/")[1] - 1,
+            this.state.inputing.startDate.split("/")[2]
+        );
+        if (this.state.inputing.allday.includes("allday")) {
+            newStartTime.setHours(0, 0);
+            newEndTime.setHours(24, 0);
+        } else {
+            newStartTime.setHours(this.state.inputing.time.split("~")[0].split(":")[0], this.state.inputing.time.split("~")[0].split(":")[1]);
+            newEndTime.setHours(this.state.inputing.time.split("~")[1].split(":")[0], this.state.inputing.time.split("~")[1].split(":")[1]);
+        }
+        var newdata = new User(this.state.userdata);
+        newdata.calendars.map(calendar => {
+            if (calendar.title == this.state.inputing.calendar.label) {
+                calendar.repeats.push(
+                    new Repeat({
+                        name: this.state.inputing.title,
+                        startDate: startDate,
+                        endDate: endDate,
+                        startTime: newStartTime,
+                        endTime: newEndTime,
+                        cycle: this.state.inputing.cycle,
+                        repeatData: this.state.inputing.repeatData,
+                    })
+                );
+            }
+        });
+        var res = null;
+        try {
+            res = await fetch(backendURL + "/api/updateuserdata", { method: "post", body: JSON.stringify({ calendars: newdata.calendars }) });
+        } catch (err) {
+            displayError("對不起 ... 發生技術性問題啦 T_T", "創建新系列時發生了一些問題，希望你可以與我們聯絡來幫助我們改進 !");
+        }
+        if (res.status == 200) {
+            var etd = eventsToDispay(newdata.calendars, new Date());
+            var filled = fillEvents(eventsToDispay(newdata.calendars, new Date()), new Date());
+            this.setState({ userdata: newdata, filled: filled, eventsToDispay: etd, waiting: false, creatingRepeat: false });
+        } else {
+            displayError("對不起 ... 發生技術性問題啦 T_T", "創建新系列時發生了一些問題，希望你可以與我們聯絡來幫助我們改進 !");
+        }
     }
 
     async updateEvent() {
@@ -276,17 +263,20 @@ class index extends React.Component {
                 }
             });
         });
+        var res = {};
         try {
-            await fetch(backendURL + "/api/updateuserdata", { method: "post", body: JSON.stringify({ calendars: newdata.calendars }) });
+            res = await fetch(backendURL + "/api/updateuserdata", { method: "post", body: JSON.stringify({ calendars: newdata.calendars }) });
         } catch (err) {
             displayError("對不起 ... 發生技術性問題啦 T_T", "更新事件時發生了一些問題，希望你可以與我們聯絡來幫助我們改進 !");
         }
-        const res = await fetch(backendURL + "/api/getuserdata");
-        const json = await res.json();
-        var userdata = new User(json);
-        var etd = eventsToDispay(userdata.calendars, new Date());
-        var filled = fillEvents(eventsToDispay(userdata.calendars, new Date()), new Date());
-        this.setState({ userdata: userdata, filled: filled, eventsToDispay: etd, waiting: false, editingEvent: false });
+        if (res.status == 200) {
+            var userdata = new User(newdata);
+            var etd = eventsToDispay(userdata.calendars, new Date());
+            var filled = fillEvents(eventsToDispay(userdata.calendars, new Date()), new Date());
+            this.setState({ userdata: userdata, filled: filled, eventsToDispay: etd, waiting: false, editingEvent: false });
+        } else {
+            displayError("對不起 ... 發生技術性問題啦 T_T", "更新事件時發生了一些問題，希望你可以與我們聯絡來幫助我們改進 !");
+        }
     }
 
     async removeEvent() {
@@ -322,10 +312,14 @@ class index extends React.Component {
                 ignoreReason: value.ignoreReason,
                 ignore: value.ignore,
                 calendar: value.calendar,
+                cycle: value.cycle,
+                repeatData: value.repeatData,
                 time: value.time,
                 date: value.date,
                 title: value.title,
-                allday: value.allday
+                allday: value.allday,
+                startDate: value.startDate,
+                endDate: value.endDate
             }
         });
     }
@@ -334,23 +328,6 @@ class index extends React.Component {
         var DayviewContent = <Loader />;
         var AllDayEventsContent = <Loader />;
         if (this.state.userdata.calendars != undefined) {
-            var calendarOptions = this.state.userdata.calendars.map(calendar => {
-                return { label: calendar.title, value: calendar };
-            });
-            if (this.state.inputing.ignore != undefined)
-                var ignoreReason = this.state.inputing.ignore.includes("ignore") ? (
-                    <FormGroup>
-                        <ControlLabel>忽略原因</ControlLabel>
-                        <FormControl name="ignoreReason" />
-                    </FormGroup>
-                ) : null;
-            if (this.state.inputing.allday == undefined || !this.state.inputing.allday.includes("allday"))
-                var time = (
-                    <FormGroup>
-                        <ControlLabel>時間</ControlLabel>
-                        <FormControl name="time" />
-                    </FormGroup>
-                );
             var filled = fillEvents(eventsToDispay(this.state.userdata.calendars, this.state.selectedDay), this.state.selectedDay);
             var allDayEvents = allDayEventsToDispay(this.state.userdata.calendars, this.state.selectedDay);
             DayviewContent = <DayView events={filled} openEventEditDialog={this.openEventEditDialog} openEventCreateDialog={this.openEventCreateDialog} />;
@@ -371,26 +348,21 @@ class index extends React.Component {
                     <FlexboxGrid.Item componentClass={Col} colspan={24} xs={20} sm={18} md={12}>
                         <FlexboxGrid justify="space-around">
                             <FlexboxGrid.Item colspan={7}>
-                                <div style={{ marginTop: 80, marginLeft: 28 }}>
-                                    <h1 style={{ color: "white", marginBottom: 0 }}>Reacal</h1>
-                                    <p style={{ color: "gray", marginTop: 0 }}>專注於使用者體驗的日程規劃工具</p>
+                                <div className="app-title">
+                                    <h1>Reacal</h1>
+                                    <p>專注於使用者體驗的日程規劃工具</p>
                                 </div>
-                                <div style={{ marginTop: 40 }}>
+                                <div className="day-picker-panel">
                                     <DayPicker selectedDays={this.state.selectedDay} onDayClick={this.handleDayClick} />
                                 </div>
-                                <div style={{ marginLeft: 28, marginTop: 36 }}>
-                                    <h3 style={{ color: "white", marginBottom: 8 }}>
+                                <div className="day-info">
+                                    <h3>
                                         {this.state.selectedDay.getFullYear()} / {this.state.selectedDay.getMonth() + 1} / {this.state.selectedDay.getDate()}
                                     </h3>
-                                    <p style={{ color: "gray", marginTop: 0 }}>{dayDescription}</p>
+                                    <p>{dayDescription}</p>
                                 </div>
-                                <div style={{ marginLeft: 28 }}>
-                                    <div
-                                        style={{
-                                            overflowY: "scroll",
-                                            maxHeight: "20vh"
-                                        }}
-                                    >
+                                <div className="day-view-panel">
+                                    <div className="day-view-scroll">
                                         <Transition in={this.state.loaded} timeout={duration}>
                                             {state => (
                                                 <div
@@ -434,359 +406,38 @@ class index extends React.Component {
                     </FlexboxGrid.Item>
                 </FlexboxGrid>
 
-                <Modal show={this.state.editingEvent} aria-labelledby="form-dialog-title" width="xs">
-                    <Modal.Header closeButton onClick={this.closeEventEditDialog}>
-                        <Avatar
-                            style={{
-                                backgroundImage:
-                                    "linear-gradient(315deg, " + this.state.selectedEvent.color[0] + " 0%, " + this.state.selectedEvent.color[1] + " 100%)",
-                                color: "#ffffff"
-                            }}
-                        >
-                            {this.state.selectedEvent.calendarTitle.charAt(0)}
-                        </Avatar>{" "}
-                        <h5 style={{ marginLeft: 6, display: "inline-block" }}>{this.state.selectedEvent.calendarTitle}</h5>
-                    </Modal.Header>
-                    <Modal.Body>
-                        <Form formValue={this.state.inputing} onChange={this.handleFormChange}>
-                            <FormGroup>
-                                <ControlLabel>事件標題</ControlLabel>
-                                <FormControl name="title" />
-                            </FormGroup>
-                            <FormGroup>
-                                <ControlLabel>日期</ControlLabel>
-                                <FormControl name="date" />
-                            </FormGroup>
-                            <FormGroup>
-                                <FormControl accepter={CheckboxGroup} name="allday">
-                                    <Checkbox value="allday">全天事件</Checkbox>
-                                </FormControl>
-                            </FormGroup>
-                            {time}
-                            <FormGroup>
-                                <FormControl accepter={CheckboxGroup} name="ignore">
-                                    <Checkbox value="ignore">忽略該事項</Checkbox>
-                                </FormControl>
-                            </FormGroup>
-                            {ignoreReason}
-                        </Form>
-                    </Modal.Body>
-                    <Modal.Footer>
-                        <FlexboxGrid>
-                            <FlexboxGrid.Item colspan={3} style={{ textAlign: "left" }}>
-                                <Button color="red" onClick={this.removeEvent} loading={this.state.removing}>
-                                    刪除
-                                </Button>
-                            </FlexboxGrid.Item>
-                            <FlexboxGrid.Item colspan={15} />
-                            <FlexboxGrid.Item colspan={6} style={{ textAlign: "right" }}>
-                                <Button onClick={this.closeEventEditDialog}>取消</Button>
-                                <Button appearance="primary" onClick={this.updateEvent} loading={this.state.waiting}>
-                                    更新
-                                </Button>
-                            </FlexboxGrid.Item>
-                        </FlexboxGrid>
-                    </Modal.Footer>
-                </Modal>
+                <EditEventDialog
+                    editingEvent={this.state.editingEvent}
+                    closeEventEditDialog={this.closeEventEditDialog}
+                    selectedEvent={this.state.selectedEvent}
+                    inputing={this.state.inputing}
+                    handleFormChange={this.handleFormChange}
+                    removeEvent={this.removeEvent}
+                    removing={this.state.removing}
+                    updateEvent={this.updateEvent}
+                    waiting={this.state.waiting}
+                />
 
-                <Modal show={this.state.creatingEvent} aria-labelledby="form-dialog-title" width="xs">
-                    <Modal.Header closeButton onClick={this.closeEventCreateDialog}>
-                        <h5>創建新事件</h5>
-                    </Modal.Header>
-                    <Modal.Body>
-                        <Form formValue={this.state.inputing} onChange={this.handleFormChange}>
-                            <FormGroup>
-                                <ControlLabel>行事曆</ControlLabel>
-                                <FormControl name="calendar" data={calendarOptions} accepter={SelectPicker} />
-                            </FormGroup>
-                            <FormGroup>
-                                <ControlLabel>事件標題</ControlLabel>
-                                <FormControl name="title" />
-                            </FormGroup>
-                            <FormGroup>
-                                <ControlLabel>日期</ControlLabel>
-                                <FormControl name="date" />
-                            </FormGroup>
-                            <FormGroup>
-                                <FormControl accepter={CheckboxGroup} name="allday">
-                                    <Checkbox value="allday">全天事件</Checkbox>
-                                </FormControl>
-                            </FormGroup>
-                            {time}
-                        </Form>
-                    </Modal.Body>
-                    <Modal.Footer>
-                        <Button onClick={this.closeEventCreateDialog}>取消</Button>
-                        <Button appearance="primary" onClick={this.createEvent} loading={this.state.waiting}>
-                            創立
-                        </Button>
-                    </Modal.Footer>
-                </Modal>
+                <CreateEventDialog
+                    userdata={this.state.userdata}
+                    creatingEvent={this.state.creatingEvent}
+                    closeEventCreateDialog={this.closeEventCreateDialog}
+                    inputing={this.state.inputing}
+                    handleFormChange={this.handleFormChange}
+                    createEvent={this.createEvent}
+                    waiting={this.state.waiting}
+                    openRepeatCreateDialog={this.openRepeatCreateDialog}
+                />
 
-                <style global jsx>{`
-                    .fade-enter,
-                    .fade-appear {
-                        opacity: 0;
-                    }
-                    .fade-enter-active,
-                    .fade-appear-active {
-                        opacity: 1;
-                        transition: opacity 1s ease-in;
-                    }
-                    .fade-enter-done {
-                        opacity: 1;
-                    }
-                    .fade-exit {
-                        opacity: 1;
-                    }
-
-                    .fade-exit-active {
-                        opacity: 0;
-                        transition: opacity 1s ease-in;
-                    }
-
-                    .fade-exit-done {
-                        opacity: 0;
-                    }
-                    body {
-                        background-image: url("/bg.png");
-                        margin: 0;
-                    }
-                    ::-webkit-scrollbar {
-                        width: 5px;
-                    }
-                    ::-webkit-scrollbar-track {
-                        -webkit-border-radius: 10px;
-                        border-radius: 10px;
-                        margin: 80px 0 5px 0;
-                    }
-                    ::-webkit-scrollbar-thumb {
-                        -webkit-border-radius: 4px;
-                        border-radius: 4px;
-                        background: rgb(80, 80, 80);
-                    }
-                    /* DayPicker styles */
-
-                    .DayPicker {
-                        display: inline-block;
-                        font-size: 1rem;
-                    }
-
-                    .DayPicker-wrapper {
-                        position: relative;
-
-                        flex-direction: row;
-                        padding-bottom: 1em;
-
-                        -webkit-user-select: none;
-
-                        -moz-user-select: none;
-
-                        -ms-user-select: none;
-
-                        user-select: none;
-                    }
-
-                    .DayPicker-Months {
-                        display: flex;
-                        flex-wrap: wrap;
-                        justify-content: center;
-                    }
-
-                    .DayPicker-Month {
-                        display: table;
-                        margin: 0 1em;
-                        margin-top: 1em;
-                        border-spacing: 0;
-                        border-collapse: collapse;
-
-                        -webkit-user-select: none;
-
-                        -moz-user-select: none;
-
-                        -ms-user-select: none;
-
-                        user-select: none;
-                    }
-
-                    .DayPicker-NavButton {
-                        position: absolute;
-                        top: 1em;
-                        right: 1.5em;
-                        left: auto;
-
-                        display: inline-block;
-                        margin-top: 2px;
-                        width: 1.25em;
-                        height: 1.25em;
-                        background-position: center;
-                        background-size: 50%;
-                        background-repeat: no-repeat;
-                        color: #8b9898;
-                        cursor: pointer;
-                    }
-
-                    .DayPicker-NavButton:hover {
-                        opacity: 0.8;
-                    }
-
-                    .DayPicker-NavButton--prev {
-                        margin-right: 1.5em;
-                        background-image: url("data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACQAAAAwCAYAAAB5R9gVAAAABGdBTUEAALGPC/xhBQAAAVVJREFUWAnN2G0KgjAYwPHpGfRkaZeqvgQaK+hY3SUHrk1YzNLay/OiEFp92I+/Mp2F2Mh2lLISWnflFjzH263RQjzMZ19wgs73ez0o1WmtW+dgA01VxrE3p6l2GLsnBy1VYQOtVSEH/atCCgqpQgKKqYIOiq2CBkqtggLKqQIKgqgCBjpJ2Y5CdJ+zrT9A7HHSTA1dxUdHgzCqJIEwq0SDsKsEg6iqBIEoq/wEcVRZBXFV+QJxV5mBtlDFB5VjYTaGZ2sf4R9PM7U9ZU+lLuaetPP/5Die3ToO1+u+MKtHs06qODB2zBnI/jBd4MPQm1VkY79Tb18gB+C62FdBFsZR6yeIo1YQiLJWMIiqVjQIu1YSCLNWFgijVjYIuhYYCKoWKAiiFgoopxYaKLUWOii2FgkophYp6F3r42W5A9s9OcgNvva8xQaysKXlFytoqdYmQH6tF3toSUo0INq9AAAAAElFTkSuQmCC");
-                    }
-
-                    .DayPicker-NavButton--next {
-                        background-image: url("data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACQAAAAwCAYAAAB5R9gVAAAABGdBTUEAALGPC/xhBQAAAXRJREFUWAnN119ugjAcwPHWzJ1gnmxzB/BBE0n24m4xfNkTaOL7wOtsl3AXMMb+Vjaa1BG00N8fSEibPpAP3xAKKs2yjzTPH9RAjhEo9WzPr/Vm8zgE0+gXATAxxuxtqeJ9t5tIwv5AtQAApsfT6TPdbp+kUBcgVwvO51KqVhMkXKsVJFXrOkigVhCIs1Y4iKlWZxB1rX4gwlpRIIpa8SDkWmggrFq4IIRaJKCYWnSgnrXIQV1r8YD+1Vrn+bReagysIFfLABRt31v8oBu1xEBttfRbltmfjgEcWh9snUS2kNdBK6WN1vrOWxObWsz+fjxevsxmB1GQDfINWiev83nhaoiB/CoOU438oPrhXS0WpQ9xc1ZQWxWHqUYe0I0qrKCQKjygDlXIQV2r0IF6ViEBxVTBBSFUQQNhVYkHIVeJAtkNsbQ7c1LtzP6FsObhb2rCKv7NBIGoq4SDmKoEgTirXAcJVGkFSVVpgoSrXICGUMUH/QBZNSUy5XWUhwAAAABJRU5ErkJggg==");
-                    }
-
-                    .DayPicker-NavButton--interactionDisabled {
-                        display: none;
-                    }
-
-                    .DayPicker-Caption {
-                        display: table-caption;
-                        margin-bottom: 0.5em;
-                        padding: 0 0.5em;
-                        text-align: left;
-                        color: white;
-                    }
-
-                    .DayPicker-Caption > div {
-                        font-weight: 500;
-                        font-size: 1.15em;
-                    }
-
-                    .DayPicker-Weekdays {
-                        display: table-header-group;
-                        margin-top: 1em;
-                    }
-
-                    .DayPicker-WeekdaysRow {
-                        display: table-row;
-                    }
-
-                    .DayPicker-Weekday {
-                        display: table-cell;
-                        padding: 0.5em;
-                        color: #8b9898;
-                        text-align: center;
-                        font-size: 0.875em;
-                    }
-
-                    .DayPicker-Weekday abbr[title] {
-                        border-bottom: none;
-                        text-decoration: none;
-                    }
-
-                    .DayPicker-Body {
-                        display: table-row-group;
-                    }
-
-                    .DayPicker-Week {
-                        display: table-row;
-                    }
-
-                    .DayPicker-Day {
-                        display: table-cell;
-                        padding: 0.5em;
-                        border-radius: 50%;
-                        vertical-align: middle;
-                        text-align: center;
-                        cursor: pointer;
-                        color: gray;
-                    }
-
-                    .DayPicker-WeekNumber {
-                        display: table-cell;
-                        padding: 0.5em;
-                        min-width: 1em;
-                        border-right: 1px solid #eaecec;
-                        color: #8b9898;
-                        vertical-align: middle;
-                        text-align: right;
-                        font-size: 0.75em;
-                        cursor: pointer;
-                    }
-
-                    .DayPicker--interactionDisabled .DayPicker-Day {
-                        cursor: default;
-                    }
-
-                    .DayPicker-Footer {
-                        padding-top: 0.5em;
-                    }
-
-                    .DayPicker-TodayButton {
-                        border: none;
-                        background-color: transparent;
-                        background-image: none;
-                        box-shadow: none;
-                        color: #4a90e2;
-                        font-size: 0.875em;
-                        cursor: pointer;
-                    }
-
-                    .DayPicker-Day--today {
-                        color: white;
-                        font-weight: 700;
-                    }
-
-                    .DayPicker-Day--outside {
-                        color: #8b9898;
-                        cursor: default;
-                    }
-
-                    .DayPicker-Day--disabled {
-                        color: #dce0e0;
-                        cursor: default;
-                        /* background-color: #eff1f1; */
-                    }
-
-                    /* Example modifiers */
-
-                    .DayPicker-Day--sunday {
-                        background-color: #f7f8f8;
-                    }
-
-                    .DayPicker-Day--sunday:not(.DayPicker-Day--today) {
-                        color: #dce0e0;
-                    }
-
-                    .DayPicker-Day--selected:not(.DayPicker-Day--disabled):not(.DayPicker-Day--outside) {
-                        position: relative;
-
-                        background-color: #4a90e2;
-                        color: #f0f8ff;
-                    }
-
-                    .DayPicker-Day--selected:not(.DayPicker-Day--disabled):not(.DayPicker-Day--outside):hover {
-                        background-color: #51a0fa;
-                    }
-
-                    .DayPicker:not(.DayPicker--interactionDisabled)
-                        .DayPicker-Day:not(.DayPicker-Day--disabled):not(.DayPicker-Day--selected):not(.DayPicker-Day--outside):hover {
-                        background-color: #f0f8ff;
-                    }
-
-                    /* DayPickerInput */
-
-                    .DayPickerInput {
-                        display: inline-block;
-                    }
-
-                    .DayPickerInput-OverlayWrapper {
-                        position: relative;
-                    }
-
-                    .DayPickerInput-Overlay {
-                        position: absolute;
-                        left: 0;
-                        z-index: 1;
-
-                        background: white;
-                        box-shadow: 0 2px 5px rgba(0, 0, 0, 0.15);
-                    }
-                `}</style>
+                <CreateRepeatDialog
+                    userdata={this.state.userdata}
+                    creatingRepeat={this.state.creatingRepeat}
+                    closeRepeatCreateDialog={this.closeRepeatCreateDialog}
+                    inputing={this.state.inputing}
+                    handleFormChange={this.handleFormChange}
+                    createRepeat={this.createRepeat}
+                    waiting={this.state.waiting}
+                />
             </Container>
         );
     }
