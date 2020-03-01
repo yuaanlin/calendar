@@ -29,23 +29,13 @@ class EventCard extends React.Component {
             height: duration,
             backgroundColor: "transparent",
             borderBottomStyle: endTime.getMinutes() == 0 ? "solid" : "none",
-            borderBottomColor: "#333333",
-            borderBottomWidth: 1,
+            borderBottomColor: "#2F3136",
+            borderBottomWidth: 2,
             borderTopStyle: startTime.getMinutes() == 0 ? "solid" : "none",
-            borderTopColor: "#333333",
-            borderTopWidth: 1
+            borderTopColor: "#2F3136",
+            borderTopWidth: 2
         };
-        return (
-            <div style={cardStyle} key={startTime.getTime()} onClick={this.handleEmptyCardClick}>
-                {/** startTime.getHours() +
-                    ":" +
-                    startTime.getMinutes() +
-                    " - " +
-                    endTime.getHours() +
-                    ":" +
-                 endTime.getMinutes() */}
-            </div>
-        );
+        return <div style={cardStyle} key={startTime.getTime()} onClick={this.handleEmptyCardClick} />;
     }
 
     EmptySections(start, end) {
@@ -124,13 +114,6 @@ class EventCard extends React.Component {
                             {this.props.event.duration} 分鐘
                         </p>
                     );
-                else {
-                    eventInfo.push(
-                        <p style={{ color: "rgba(255,255,255,0.8)" }} key="duration">
-                            全天事件
-                        </p>
-                    );
-                }
                 eventInfo.push(
                     <p style={{ color: "rgba(255,255,255,0.8)" }} key="cal">
                         {this.props.event.calendarTitle}

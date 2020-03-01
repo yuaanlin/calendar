@@ -29,3 +29,11 @@ export function getDayDescription(date) {
     }
     return dayDescription;
 }
+
+import { Notification } from 'rsuite';
+export function displayError(title, message) {
+    Notification["error"]({
+        title: title,
+        description: message
+    });
+}

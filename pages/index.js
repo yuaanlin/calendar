@@ -5,9 +5,10 @@ import fetch from "isomorphic-unfetch";
 import { Transition } from "react-transition-group";
 
 import DayView from "../comps/DayView";
+import AllDayEvents from "../comps/AllDayEvents";
 import { User, Calendar, Event } from "../classes";
 import { backendURL } from "../config";
-import { getDayDescription } from "../utils/methods";
+import { getDayDescription, displayError } from "../utils/methods";
 
 import {
     Loader,
@@ -95,12 +96,31 @@ function eventsToDispay(calendars, date) {
     return eventsToDispay;
 }
 
+function allDayEventsToDispay(calendars, date) {
+    var allDayEventsToDispay = [];
+    calendars.map(calendar => {
+        calendar = new Calendar(calendar);
+        calendar.events.map(event => {
+            if (
+                event.startTime.getFullYear() == date.getFullYear() &&
+                event.startTime.getMonth() == date.getMonth() &&
+                event.startTime.getDate() == date.getDate() &&
+                event.isAllDayEvent()
+            ) {
+                allDayEventsToDispay.push(event);
+            }
+        });
+    });
+    return allDayEventsToDispay;
+}
+
 class index extends React.Component {
     constructor(props) {
         super(props);
         this.state = {
             loaded: false,
             waiting: false,
+            removing: false,
             selectedDay: new Date(),
             eventsToDispay: [],
             userdata: {},
@@ -129,6 +149,7 @@ class index extends React.Component {
         this.closeEventCreateDialog = this.closeEventCreateDialog.bind(this);
         this.updateEvent = this.updateEvent.bind(this);
         this.createEvent = this.createEvent.bind(this);
+        this.removeEvent = this.removeEvent.bind(this);
         this.handleFormChange = this.handleFormChange.bind(this);
     }
 
@@ -163,7 +184,8 @@ class index extends React.Component {
                 date: event.startTime.getFullYear() + "/" + (event.startTime.getMonth() + 1) + "/" + event.startTime.getDate(),
                 time: event.startTime.getHours() + ":" + event.startTime.getMinutes() + "~" + event.endTime.getHours() + ":" + event.endTime.getMinutes(),
                 ignore: [event.ignore ? "ignore" : null],
-                ignoreReason: event.ignoreReason == undefined ? "" : event.ignoreReason
+                ignoreReason: event.ignoreReason == undefined ? "" : event.ignoreReason,
+                allday: [event.isAllDayEvent() ? "allday" : null]
             }
         });
     }
@@ -179,7 +201,8 @@ class index extends React.Component {
                 title: event.title,
                 date: this.state.selectedDay.getFullYear() + "/" + (this.state.selectedDay.getMonth() + 1) + "/" + this.state.selectedDay.getDate(),
                 time: new Date().getHours() + ":" + new Date().getMinutes() + "~" + (new Date().getHours() + 1) + ":" + new Date().getMinutes(),
-                calendar: { label: this.state.userdata.calendars[0].title, value: this.state.userdata.calendars[0] }
+                calendar: { label: this.state.userdata.calendars[0].title, value: this.state.userdata.calendars[0] },
+                allday: [null]
             }
         });
     }
@@ -196,15 +219,24 @@ class index extends React.Component {
         var newEndTime = new Date();
         newStartTime.setFullYear(this.state.inputing.date.split("/")[0], this.state.inputing.date.split("/")[1] - 1, this.state.inputing.date.split("/")[2]);
         newEndTime.setFullYear(this.state.inputing.date.split("/")[0], this.state.inputing.date.split("/")[1] - 1, this.state.inputing.date.split("/")[2]);
-        newStartTime.setHours(this.state.inputing.time.split("~")[0].split(":")[0], this.state.inputing.time.split("~")[0].split(":")[1]);
-        newEndTime.setHours(this.state.inputing.time.split("~")[1].split(":")[0], this.state.inputing.time.split("~")[1].split(":")[1]);
+        if (this.state.inputing.allday.includes("allday")) {
+            newStartTime.setHours(0, 0);
+            newEndTime.setHours(24, 0);
+        } else {
+            newStartTime.setHours(this.state.inputing.time.split("~")[0].split(":")[0], this.state.inputing.time.split("~")[0].split(":")[1]);
+            newEndTime.setHours(this.state.inputing.time.split("~")[1].split(":")[0], this.state.inputing.time.split("~")[1].split(":")[1]);
+        }
         var newdata = new User(this.state.userdata);
         newdata.calendars.map(calendar => {
             if (calendar.title == this.state.inputing.calendar.label) {
                 calendar.events.push(new Event({ title: this.state.inputing.title, startTime: newStartTime, endTime: newEndTime, color: calendar.color }));
             }
         });
-        await fetch(backendURL + "/api/updateuserdata", { method: "post", body: JSON.stringify({ calendars: newdata.calendars }) });
+        try {
+            await fetch(backendURL + "/api/updateuserdata", { method: "post", body: JSON.stringify({ calendars: newdata.calendars }) });
+        } catch (err) {
+            displayError("對不起 ... 發生技術性問題啦 T_T", "創建新事件時發生了一些問題，希望你可以與我們聯絡來幫助我們改進 !");
+        }
         const res = await fetch(backendURL + "/api/getuserdata");
         const json = await res.json();
         var userdata = new User(json);
@@ -221,8 +253,13 @@ class index extends React.Component {
         var newEndTime = new Date();
         newStartTime.setFullYear(this.state.inputing.date.split("/")[0], this.state.inputing.date.split("/")[1] - 1, this.state.inputing.date.split("/")[2]);
         newEndTime.setFullYear(this.state.inputing.date.split("/")[0], this.state.inputing.date.split("/")[1] - 1, this.state.inputing.date.split("/")[2]);
-        newStartTime.setHours(this.state.inputing.time.split("~")[0].split(":")[0], this.state.inputing.time.split("~")[0].split(":")[1]);
-        newEndTime.setHours(this.state.inputing.time.split("~")[1].split(":")[0], this.state.inputing.time.split("~")[1].split(":")[1]);
+        if (this.state.inputing.allday.includes("allday")) {
+            newStartTime.setHours(0, 0);
+            newEndTime.setHours(24, 0);
+        } else {
+            newStartTime.setHours(this.state.inputing.time.split("~")[0].split(":")[0], this.state.inputing.time.split("~")[0].split(":")[1]);
+            newEndTime.setHours(this.state.inputing.time.split("~")[1].split(":")[0], this.state.inputing.time.split("~")[1].split(":")[1]);
+        }
         var newdata = new User(this.state.userdata);
         newdata.calendars.map(calendar => {
             calendar.events.map(event => {
@@ -235,13 +272,44 @@ class index extends React.Component {
                 }
             });
         });
-        await fetch(backendURL + "/api/updateuserdata", { method: "post", body: JSON.stringify({ calendars: newdata.calendars }) });
+        try {
+            await fetch(backendURL + "/api/updateuserdata", { method: "post", body: JSON.stringify({ calendars: newdata.calendars }) });
+        } catch (err) {
+            displayError("對不起 ... 發生技術性問題啦 T_T", "更新事件時發生了一些問題，希望你可以與我們聯絡來幫助我們改進 !");
+        }
         const res = await fetch(backendURL + "/api/getuserdata");
         const json = await res.json();
         var userdata = new User(json);
         var etd = eventsToDispay(userdata.calendars, new Date());
         var filled = fillEvents(eventsToDispay(userdata.calendars, new Date()), new Date());
         this.setState({ userdata: userdata, filled: filled, eventsToDispay: etd, waiting: false, editingEvent: false });
+    }
+
+    async removeEvent() {
+        this.setState({
+            removing: true
+        });
+        var newdata = new User(this.state.userdata);
+        newdata.calendars.map(calendar => {
+            var targetEvent = null;
+            calendar.events.map(event => {
+                if (event.id == this.state.selectedEvent.id) {
+                    targetEvent = event;
+                }
+            });
+            if (targetEvent != null) calendar.events.splice(calendar.events.indexOf(targetEvent), 1);
+        });
+        try {
+            await fetch(backendURL + "/api/updateuserdata", { method: "post", body: JSON.stringify({ calendars: newdata.calendars }) });
+        } catch (err) {
+            displayError("對不起 ... 發生技術性問題啦 T_T", "刪除事件時發生了一些問題，希望你可以與我們聯絡來幫助我們改進 !");
+        }
+        const res = await fetch(backendURL + "/api/getuserdata");
+        const json = await res.json();
+        var userdata = new User(json);
+        var etd = eventsToDispay(userdata.calendars, new Date());
+        var filled = fillEvents(eventsToDispay(userdata.calendars, new Date()), new Date());
+        this.setState({ userdata: userdata, filled: filled, eventsToDispay: etd, removing: false, editingEvent: false });
     }
 
     handleFormChange(value) {
@@ -252,13 +320,15 @@ class index extends React.Component {
                 calendar: value.calendar,
                 time: value.time,
                 date: value.date,
-                title: value.title
+                title: value.title,
+                allday: value.allday
             }
         });
     }
 
     render() {
         var DayviewContent = <Loader />;
+        var AllDayEventsContent = <Loader />;
         if (this.state.userdata.calendars != undefined) {
             var calendarOptions = this.state.userdata.calendars.map(calendar => {
                 return { label: calendar.title, value: calendar };
@@ -270,8 +340,19 @@ class index extends React.Component {
                         <FormControl name="ignoreReason" />
                     </FormGroup>
                 ) : null;
+            if (this.state.inputing.allday == undefined || !this.state.inputing.allday.includes("allday"))
+                var time = (
+                    <FormGroup>
+                        <ControlLabel>時間</ControlLabel>
+                        <FormControl name="time" />
+                    </FormGroup>
+                );
             var filled = fillEvents(eventsToDispay(this.state.userdata.calendars, this.state.selectedDay), this.state.selectedDay);
+            var allDayEvents = allDayEventsToDispay(this.state.userdata.calendars, this.state.selectedDay);
             DayviewContent = <DayView events={filled} openEventEditDialog={this.openEventEditDialog} openEventCreateDialog={this.openEventCreateDialog} />;
+            AllDayEventsContent = (
+                <AllDayEvents events={allDayEvents} openEventEditDialog={this.openEventEditDialog} openEventCreateDialog={this.openEventCreateDialog} />
+            );
         }
 
         var dayDescription = getDayDescription(this.state.selectedDay);
@@ -299,9 +380,30 @@ class index extends React.Component {
                                     </h3>
                                     <p style={{ color: "gray", marginTop: 0 }}>{dayDescription}</p>
                                 </div>
+                                <div style={{ marginLeft: 28 }}>
+                                    <div
+                                        style={{
+                                            overflowY: "scroll",
+                                            maxHeight: "20vh"
+                                        }}
+                                    >
+                                        <Transition in={this.state.loaded} timeout={duration}>
+                                            {state => (
+                                                <div
+                                                    style={{
+                                                        ...defaultStyle,
+                                                        ...transitionStyles[state]
+                                                    }}
+                                                >
+                                                    {AllDayEventsContent}
+                                                </div>
+                                            )}
+                                        </Transition>
+                                    </div>
+                                </div>
                             </FlexboxGrid.Item>
                             <FlexboxGrid.Item colspan={14}>
-                                <Panel elevation={10} style={{ backgroundColor: "#222222", marginLeft: 60 }} bodyFill>
+                                <Panel style={{ marginLeft: 60 }} bodyFill>
                                     <div
                                         style={{
                                             overflowY: "scroll",
@@ -352,22 +454,34 @@ class index extends React.Component {
                                 <FormControl name="date" />
                             </FormGroup>
                             <FormGroup>
-                                <ControlLabel>時間</ControlLabel>
-                                <FormControl name="time" />
+                                <FormControl accepter={CheckboxGroup} name="allday">
+                                    <Checkbox value="allday">全天事件</Checkbox>
+                                </FormControl>
                             </FormGroup>
+                            {time}
                             <FormGroup>
                                 <FormControl accepter={CheckboxGroup} name="ignore">
                                     <Checkbox value="ignore">忽略該事項</Checkbox>
                                 </FormControl>
                             </FormGroup>
-                            <FormGroup>{ignoreReason}</FormGroup>
+                            {ignoreReason}
                         </Form>
                     </Modal.Body>
                     <Modal.Footer>
-                        <Button onClick={this.closeEventEditDialog}>取消</Button>
-                        <Button appearance="primary" onClick={this.updateEvent} loading={this.state.waiting}>
-                            更新
-                        </Button>
+                        <FlexboxGrid>
+                            <FlexboxGrid.Item colspan={3} style={{ textAlign: "left" }}>
+                                <Button color="red" onClick={this.removeEvent} loading={this.state.removing}>
+                                    刪除
+                                </Button>
+                            </FlexboxGrid.Item>
+                            <FlexboxGrid.Item colspan={15} />
+                            <FlexboxGrid.Item colspan={6} style={{ textAlign: "right" }}>
+                                <Button onClick={this.closeEventEditDialog}>取消</Button>
+                                <Button appearance="primary" onClick={this.updateEvent} loading={this.state.waiting}>
+                                    更新
+                                </Button>
+                            </FlexboxGrid.Item>
+                        </FlexboxGrid>
                     </Modal.Footer>
                 </Modal>
 
@@ -390,9 +504,11 @@ class index extends React.Component {
                                 <FormControl name="date" />
                             </FormGroup>
                             <FormGroup>
-                                <ControlLabel>時間</ControlLabel>
-                                <FormControl name="time" />
+                                <FormControl accepter={CheckboxGroup} name="allday">
+                                    <Checkbox value="allday">全天事件</Checkbox>
+                                </FormControl>
                             </FormGroup>
+                            {time}
                         </Form>
                     </Modal.Body>
                     <Modal.Footer>
@@ -429,7 +545,7 @@ class index extends React.Component {
                         opacity: 0;
                     }
                     body {
-                        background: #222222;
+                        background-image: url("/bg.png");
                         margin: 0;
                     }
                     ::-webkit-scrollbar {
