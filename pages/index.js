@@ -160,17 +160,22 @@ class index extends React.Component {
                 calendar.events.push(new Event({ title: this.state.inputing.title, startTime: newStartTime, endTime: newEndTime, color: calendar.color }));
             }
         });
+
+        // 更新視圖
+        var etd = eventsToDispay(newdata.calendars, new Date());
+        var filled = fillEvents(eventsToDispay(newdata.calendars, new Date()), new Date());
+        this.setState({ userdata: userdata, filled: filled, eventsToDispay: etd, waiting: false, creatingEvent: false });
+
+        // 上傳更新到資料庫
+        var res = null;
         try {
-            await fetch(backendURL + "/api/updateuserdata", { method: "post", body: JSON.stringify({ calendars: newdata.calendars }) });
+            res = fetch(backendURL + "/api/updateuserdata", { method: "post", body: JSON.stringify({ calendars: newdata.calendars }) });
         } catch (err) {
             displayError("對不起 ... 發生技術性問題啦 T_T", "創建新事件時發生了一些問題，希望你可以與我們聯絡來幫助我們改進 !");
-        }
-        if (res.status == 200) {
-            var etd = eventsToDispay(newdata.calendars, new Date());
-            var filled = fillEvents(eventsToDispay(newdata.calendars, new Date()), new Date());
-            this.setState({ userdata: userdata, filled: filled, eventsToDispay: etd, waiting: false, creatingEvent: false });
-        } else {
-            displayError("對不起 ... 發生技術性問題啦 T_T", "創建新系列時發生了一些問題，希望你可以與我們聯絡來幫助我們改進 !");
+        } finally {
+            if (res.status != 200) {
+                displayError("對不起 ... 發生技術性問題啦 T_T", "創建新事件時發生了一些問題，希望你可以與我們聯絡來幫助我們改進 !");
+            }
         }
     }
 
@@ -185,7 +190,11 @@ class index extends React.Component {
             this.state.inputing.startDate.split("/")[1] - 1,
             this.state.inputing.startDate.split("/")[2]
         );
-        endDate.setFullYear(this.state.inputing.endDate.split("/")[0], this.state.inputing.endDate.split("/")[1] - 1, this.state.inputing.endDate.split("/")[2]);
+        endDate.setFullYear(
+            this.state.inputing.endDate.split("/")[0],
+            this.state.inputing.endDate.split("/")[1] - 1,
+            this.state.inputing.endDate.split("/")[2]
+        );
         var newStartTime = new Date();
         var newEndTime = new Date();
         newStartTime.setFullYear(
@@ -216,23 +225,25 @@ class index extends React.Component {
                         startTime: newStartTime,
                         endTime: newEndTime,
                         cycle: this.state.inputing.cycle,
-                        repeatData: this.state.inputing.repeatData,
+                        repeatData: this.state.inputing.repeatData
                     })
                 );
             }
         });
+
+        // 更新視圖
+        var etd = eventsToDispay(newdata.calendars, new Date());
+        var filled = fillEvents(eventsToDispay(newdata.calendars, new Date()), new Date());
+        this.setState({ userdata: newdata, filled: filled, eventsToDispay: etd, waiting: false, creatingRepeat: false });
+
+        // 上傳變更到數據庫
         var res = null;
         try {
             res = await fetch(backendURL + "/api/updateuserdata", { method: "post", body: JSON.stringify({ calendars: newdata.calendars }) });
         } catch (err) {
             displayError("對不起 ... 發生技術性問題啦 T_T", "創建新系列時發生了一些問題，希望你可以與我們聯絡來幫助我們改進 !");
-        }
-        if (res.status == 200) {
-            var etd = eventsToDispay(newdata.calendars, new Date());
-            var filled = fillEvents(eventsToDispay(newdata.calendars, new Date()), new Date());
-            this.setState({ userdata: newdata, filled: filled, eventsToDispay: etd, waiting: false, creatingRepeat: false });
-        } else {
-            displayError("對不起 ... 發生技術性問題啦 T_T", "創建新系列時發生了一些問題，希望你可以與我們聯絡來幫助我們改進 !");
+        } finally {
+            if (res.status != 200) displayError("對不起 ... 發生技術性問題啦 T_T", "創建新系列時發生了一些問題，希望你可以與我們聯絡來幫助我們改進 !");
         }
     }
 
@@ -263,19 +274,20 @@ class index extends React.Component {
                 }
             });
         });
-        var res = {};
+
+        // 更新視圖
+        var etd = eventsToDispay(newdata.calendars, new Date());
+        var filled = fillEvents(eventsToDispay(newdata.calendars, new Date()), new Date());
+        this.setState({ userdata: newdata, filled: filled, eventsToDispay: etd, waiting: false, editingEvent: false });
+
+        // 上傳變更到資料庫
+        var res = null;
         try {
             res = await fetch(backendURL + "/api/updateuserdata", { method: "post", body: JSON.stringify({ calendars: newdata.calendars }) });
         } catch (err) {
             displayError("對不起 ... 發生技術性問題啦 T_T", "更新事件時發生了一些問題，希望你可以與我們聯絡來幫助我們改進 !");
-        }
-        if (res.status == 200) {
-            var userdata = new User(newdata);
-            var etd = eventsToDispay(userdata.calendars, new Date());
-            var filled = fillEvents(eventsToDispay(userdata.calendars, new Date()), new Date());
-            this.setState({ userdata: userdata, filled: filled, eventsToDispay: etd, waiting: false, editingEvent: false });
-        } else {
-            displayError("對不起 ... 發生技術性問題啦 T_T", "更新事件時發生了一些問題，希望你可以與我們聯絡來幫助我們改進 !");
+        } finally {
+            if (res.status != 200) displayError("對不起 ... 發生技術性問題啦 T_T", "更新事件時發生了一些問題，希望你可以與我們聯絡來幫助我們改進 !");
         }
     }
 
