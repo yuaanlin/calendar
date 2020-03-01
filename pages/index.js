@@ -55,7 +55,7 @@ class index extends React.Component {
 
     async handleDayClick(day, { selected }) {
         var newdata = buildRepeatToEvent(this.state.userdata, day);
-        await fetch(backendURL + "/api/updateuserdata", { method: "post", body: JSON.stringify({ calendars: newdata.calendars }) });
+        fetch(backendURL + "/api/updateuserdata", { method: "post", body: JSON.stringify({ calendars: newdata.calendars }) });
         this.setState({
             selectedDay: selected ? new Date() : day,
             userdata: newdata
