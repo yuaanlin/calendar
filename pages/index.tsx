@@ -1,4 +1,4 @@
-import React from "react";
+import React, { Props } from "react";
 import { Helmet } from "react-helmet";
 import DayPicker from "react-day-picker";
 import fetch from "isomorphic-unfetch";
@@ -9,7 +9,7 @@ import AllDayEvents from "../comps/AllDayEvents";
 import EditEventDialog from "../comps/EditEventDialog";
 import CreateEventDialog from "../comps/CreateEventDialog";
 import CreateRepeatDialog from "../comps/CreateRepeatDialog";
-import { User, Event, Repeat } from "../classes";
+import { User, Event, Repeat, Calendar } from "../classes";
 import { backendURL, duration, defaultStyle, transitionStyles } from "../config";
 import { getDayDescription, displayError, eventsToDispay, allDayEventsToDispay, fillEvents, buildRepeatToEvent } from "../utils/methods";
 
@@ -18,8 +18,43 @@ import { Loader, Panel, Container, FlexboxGrid, Col } from "rsuite";
 import "rsuite/lib/styles/themes/dark/index.less";
 import "../style.less";
 
-class index extends React.Component {
-    constructor(props) {
+interface inputing {
+    title: string,
+    date: string,
+    time: string,
+    ignore: Array<string>,
+    ignoreReason: string,
+    allday: Array<string>,
+    calendar: { label: string, value: Calendar },
+    startDate: string,
+    endDate: string,
+    cycle: string,
+    repeatData: number
+}
+
+interface State {
+    loaded: boolean,
+    waiting: boolean,
+    removing: boolean,
+    selectedDay: Date,
+    eventsToDispay: Array<Event>,
+    userdata: User,
+    filled: Array<Event>,
+    editingEvent: boolean,
+    creatingEvent: boolean,
+    creatingRepeat: boolean,
+    selectedEvent: Event,
+    inputing: inputing
+}
+
+interface Prop {
+    userdata: User,
+    filled: Array<Event>,
+    eventsToDispay: Array<Event>
+}
+
+class index extends React.Component<Prop, State> {
+    constructor(props: Readonly<Prop>) {
         super(props);
         this.state = {
             loaded: false,
@@ -27,17 +62,25 @@ class index extends React.Component {
             removing: false,
             selectedDay: new Date(),
             eventsToDispay: [],
-            userdata: {},
+            userdata: new User(),
             filled: [],
             editingEvent: false,
             creatingEvent: false,
-            selectedEvent: new Event({
-                title: "選中的事件",
-                startTime: new Date(),
-                endTime: new Date(),
-                color: ["#fd3721", "#b721ff"],
-                calendarTitle: "哈"
-            })
+            creatingRepeat: false,
+            selectedEvent: new Event(),
+            inputing: {
+                title: "",
+                date: "",
+                time: "",
+                ignore: [],
+                ignoreReason: "",
+                allday: [],
+                calendar: { label: "", value: new Calendar() },
+                startDate: "",
+                endDate: "",
+                cycle: "",
+                repeatData: 0
+            }
         };
         this.handleDayClick = this.handleDayClick.bind(this);
         this.openEventEditDialog = this.openEventEditDialog.bind(this);
@@ -53,11 +96,11 @@ class index extends React.Component {
         this.handleFormChange = this.handleFormChange.bind(this);
     }
 
-    async handleDayClick(day, { selected }) {
+    async handleDayClick(day: Date) {
         var newdata = buildRepeatToEvent(this.state.userdata, day);
         fetch(backendURL + "/api/updateuserdata", { method: "post", body: JSON.stringify({ calendars: newdata.calendars }) });
         this.setState({
-            selectedDay: selected ? new Date() : day,
+            selectedDay: day,
             userdata: newdata
         });
     }
@@ -69,10 +112,10 @@ class index extends React.Component {
             var userdata = new User(json);
             var etd = eventsToDispay(userdata.calendars, new Date());
             var filled = fillEvents(eventsToDispay(userdata.calendars, new Date()), new Date());
+            return { userdata: userdata, filled: filled, eventsToDispay: etd };
         } catch (err) {
             displayError("發生錯誤 T_T", err);
         }
-        return { userdata: userdata, filled: filled, eventsToDispay: etd };
     }
 
     componentDidMount() {
@@ -82,7 +125,7 @@ class index extends React.Component {
         }, 200);
     }
 
-    openEventEditDialog(event) {
+    openEventEditDialog(event: Event) {
         this.setState({
             selectedEvent: event,
             editingEvent: true,
@@ -90,9 +133,14 @@ class index extends React.Component {
                 title: event.title,
                 date: event.startTime.getFullYear() + "/" + (event.startTime.getMonth() + 1) + "/" + event.startTime.getDate(),
                 time: event.startTime.getHours() + ":" + event.startTime.getMinutes() + "~" + event.endTime.getHours() + ":" + event.endTime.getMinutes(),
-                ignore: [event.ignore ? "ignore" : null],
+                ignore: [event.ignore ? "ignore" : ""],
                 ignoreReason: event.ignoreReason == undefined ? "" : event.ignoreReason,
-                allday: [event.isAllDayEvent() ? "allday" : null]
+                allday: [event.isAllDayEvent() ? "allday" : ""],
+                calendar: { label: "", value: new Calendar() },
+                startDate: "",
+                endDate: "",
+                cycle: "",
+                repeatData: 0
             }
         });
     }
@@ -109,7 +157,13 @@ class index extends React.Component {
                 date: this.state.selectedDay.getFullYear() + "/" + (this.state.selectedDay.getMonth() + 1) + "/" + this.state.selectedDay.getDate(),
                 time: new Date().getHours() + ":" + new Date().getMinutes() + "~" + (new Date().getHours() + 1) + ":" + new Date().getMinutes(),
                 calendar: { label: this.state.userdata.calendars[0].title, value: this.state.userdata.calendars[0] },
-                allday: [null]
+                allday: [],
+                ignore: [],
+                ignoreReason: "",
+                startDate: "",
+                endDate: "",
+                cycle: "",
+                repeatData: 0
             }
         });
     }
@@ -120,13 +174,16 @@ class index extends React.Component {
             creatingRepeat: true,
             inputing: {
                 title: "",
-                startdate: this.state.selectedDay.getFullYear() + "/" + (this.state.selectedDay.getMonth() + 1) + "/" + this.state.selectedDay.getDate(),
-                enddate: this.state.selectedDay.getFullYear() + "/" + (this.state.selectedDay.getMonth() + 1) + "/" + this.state.selectedDay.getDate(),
+                startDate: this.state.selectedDay.getFullYear() + "/" + (this.state.selectedDay.getMonth() + 1) + "/" + this.state.selectedDay.getDate(),
+                endDate: this.state.selectedDay.getFullYear() + "/" + (this.state.selectedDay.getMonth() + 1) + "/" + this.state.selectedDay.getDate(),
                 cycle: "Week",
-                repeatData: "",
+                repeatData: 0,
                 time: new Date().getHours() + ":" + new Date().getMinutes() + "~" + (new Date().getHours() + 1) + ":" + new Date().getMinutes(),
                 calendar: { label: this.state.userdata.calendars[0].title, value: this.state.userdata.calendars[0] },
-                allday: [null]
+                allday: [],
+                date: "",
+                ignore: [],
+                ignoreReason: ""
             }
         });
     }
@@ -145,19 +202,24 @@ class index extends React.Component {
         });
         var newStartTime = new Date();
         var newEndTime = new Date();
-        newStartTime.setFullYear(this.state.inputing.date.split("/")[0], this.state.inputing.date.split("/")[1] - 1, this.state.inputing.date.split("/")[2]);
-        newEndTime.setFullYear(this.state.inputing.date.split("/")[0], this.state.inputing.date.split("/")[1] - 1, this.state.inputing.date.split("/")[2]);
+        newStartTime.setFullYear(+this.state.inputing.date.split("/")[0], +this.state.inputing.date.split("/")[1] - 1, +this.state.inputing.date.split("/")[2]);
+        newEndTime.setFullYear(+this.state.inputing.date.split("/")[0], +this.state.inputing.date.split("/")[1] - 1, +this.state.inputing.date.split("/")[2]);
         if (this.state.inputing.allday.includes("allday")) {
             newStartTime.setHours(0, 0);
             newEndTime.setHours(24, 0);
         } else {
-            newStartTime.setHours(this.state.inputing.time.split("~")[0].split(":")[0], this.state.inputing.time.split("~")[0].split(":")[1]);
-            newEndTime.setHours(this.state.inputing.time.split("~")[1].split(":")[0], this.state.inputing.time.split("~")[1].split(":")[1]);
+            newStartTime.setHours(+this.state.inputing.time.split("~")[0].split(":")[0], +this.state.inputing.time.split("~")[0].split(":")[1]);
+            newEndTime.setHours(+this.state.inputing.time.split("~")[1].split(":")[0], +this.state.inputing.time.split("~")[1].split(":")[1]);
         }
-        var newdata = new User(this.state.userdata);
+        var newdata = this.state.userdata;
         newdata.calendars.map(calendar => {
             if (calendar.title == this.state.inputing.calendar.label) {
-                calendar.events.push(new Event({ title: this.state.inputing.title, startTime: newStartTime, endTime: newEndTime, color: calendar.color }));
+                var newEvent = new Event();
+                newEvent.title = this.state.inputing.title;
+                newEvent.startTime = newStartTime;
+                newEvent.endTime = newEndTime;
+                newEvent.color = calendar.color;
+                calendar.events.push(newEvent);
             }
         });
 
@@ -173,7 +235,7 @@ class index extends React.Component {
         } catch (err) {
             displayError("對不起 ... 發生技術性問題啦 T_T", "創建新事件時發生了一些問題，希望你可以與我們聯絡來幫助我們改進 !");
         } finally {
-            if (res.status != 200) displayError("對不起 ... 發生技術性問題啦 T_T", "創建新事件時發生了一些問題，希望你可以與我們聯絡來幫助我們改進 !");
+            if (res != null && res.status != 200) displayError("對不起 ... 發生技術性問題啦 T_T", "創建新事件時發生了一些問題，希望你可以與我們聯絡來幫助我們改進 !");
         }
     }
 
@@ -184,48 +246,46 @@ class index extends React.Component {
         var startDate = new Date();
         var endDate = new Date();
         startDate.setFullYear(
-            this.state.inputing.startDate.split("/")[0],
-            this.state.inputing.startDate.split("/")[1] - 1,
-            this.state.inputing.startDate.split("/")[2]
+            +this.state.inputing.startDate.split("/")[0],
+            +this.state.inputing.startDate.split("/")[1] - 1,
+            +this.state.inputing.startDate.split("/")[2]
         );
         endDate.setFullYear(
-            this.state.inputing.endDate.split("/")[0],
-            this.state.inputing.endDate.split("/")[1] - 1,
-            this.state.inputing.endDate.split("/")[2]
+            +this.state.inputing.endDate.split("/")[0],
+            +this.state.inputing.endDate.split("/")[1] - 1,
+            +this.state.inputing.endDate.split("/")[2]
         );
         var newStartTime = new Date();
         var newEndTime = new Date();
         newStartTime.setFullYear(
-            this.state.inputing.startDate.split("/")[0],
-            this.state.inputing.startDate.split("/")[1] - 1,
-            this.state.inputing.startDate.split("/")[2]
+            +this.state.inputing.startDate.split("/")[0],
+            +this.state.inputing.startDate.split("/")[1] - 1,
+            +this.state.inputing.startDate.split("/")[2]
         );
         newEndTime.setFullYear(
-            this.state.inputing.startDate.split("/")[0],
-            this.state.inputing.startDate.split("/")[1] - 1,
-            this.state.inputing.startDate.split("/")[2]
+            +this.state.inputing.startDate.split("/")[0],
+            +this.state.inputing.startDate.split("/")[1] - 1,
+            +this.state.inputing.startDate.split("/")[2]
         );
         if (this.state.inputing.allday.includes("allday")) {
             newStartTime.setHours(0, 0);
             newEndTime.setHours(24, 0);
         } else {
-            newStartTime.setHours(this.state.inputing.time.split("~")[0].split(":")[0], this.state.inputing.time.split("~")[0].split(":")[1]);
-            newEndTime.setHours(this.state.inputing.time.split("~")[1].split(":")[0], this.state.inputing.time.split("~")[1].split(":")[1]);
+            newStartTime.setHours(+this.state.inputing.time.split("~")[0].split(":")[0], +this.state.inputing.time.split("~")[0].split(":")[1]);
+            newEndTime.setHours(+this.state.inputing.time.split("~")[1].split(":")[0], +this.state.inputing.time.split("~")[1].split(":")[1]);
         }
-        var newdata = new User(this.state.userdata);
+        var newdata = this.state.userdata;
         newdata.calendars.map(calendar => {
             if (calendar.title == this.state.inputing.calendar.label) {
-                calendar.repeats.push(
-                    new Repeat({
-                        name: this.state.inputing.title,
-                        startDate: startDate,
-                        endDate: endDate,
-                        startTime: newStartTime,
-                        endTime: newEndTime,
-                        cycle: this.state.inputing.cycle,
-                        repeatData: this.state.inputing.repeatData
-                    })
-                );
+                var newRepeat = new Repeat();
+                newRepeat.name = this.state.inputing.title;
+                newRepeat.startDate = startDate;
+                newRepeat.endDate = endDate;
+                newRepeat.startTime = newStartTime;
+                newRepeat.endTime = newEndTime;
+                newRepeat.cycle = this.state.inputing.cycle;
+                newRepeat.repeatData = this.state.inputing.repeatData;
+                calendar.repeats.push(newRepeat);
             }
         });
 
@@ -241,7 +301,7 @@ class index extends React.Component {
         } catch (err) {
             displayError("對不起 ... 發生技術性問題啦 T_T", "創建新系列時發生了一些問題，希望你可以與我們聯絡來幫助我們改進 !");
         } finally {
-            if (res.status != 200) displayError("對不起 ... 發生技術性問題啦 T_T", "創建新系列時發生了一些問題，希望你可以與我們聯絡來幫助我們改進 !");
+            if (res != null && res.status != 200) displayError("對不起 ... 發生技術性問題啦 T_T", "創建新系列時發生了一些問題，希望你可以與我們聯絡來幫助我們改進 !");
         }
     }
 
@@ -251,16 +311,16 @@ class index extends React.Component {
         });
         var newStartTime = new Date();
         var newEndTime = new Date();
-        newStartTime.setFullYear(this.state.inputing.date.split("/")[0], this.state.inputing.date.split("/")[1] - 1, this.state.inputing.date.split("/")[2]);
-        newEndTime.setFullYear(this.state.inputing.date.split("/")[0], this.state.inputing.date.split("/")[1] - 1, this.state.inputing.date.split("/")[2]);
+        newStartTime.setFullYear(+this.state.inputing.date.split("/")[0], +this.state.inputing.date.split("/")[1] - 1, +this.state.inputing.date.split("/")[2]);
+        newEndTime.setFullYear(+this.state.inputing.date.split("/")[0], +this.state.inputing.date.split("/")[1] - 1, +this.state.inputing.date.split("/")[2]);
         if (this.state.inputing.allday.includes("allday")) {
             newStartTime.setHours(0, 0);
             newEndTime.setHours(24, 0);
         } else {
-            newStartTime.setHours(this.state.inputing.time.split("~")[0].split(":")[0], this.state.inputing.time.split("~")[0].split(":")[1]);
-            newEndTime.setHours(this.state.inputing.time.split("~")[1].split(":")[0], this.state.inputing.time.split("~")[1].split(":")[1]);
+            newStartTime.setHours(+this.state.inputing.time.split("~")[0].split(":")[0], +this.state.inputing.time.split("~")[0].split(":")[1]);
+            newEndTime.setHours(+this.state.inputing.time.split("~")[1].split(":")[0], +this.state.inputing.time.split("~")[1].split(":")[1]);
         }
-        var newdata = new User(this.state.userdata);
+        var newdata = this.state.userdata;
         newdata.calendars.map(calendar => {
             calendar.events.map(event => {
                 if (event.id == this.state.selectedEvent.id) {
@@ -285,7 +345,7 @@ class index extends React.Component {
         } catch (err) {
             displayError("對不起 ... 發生技術性問題啦 T_T", "更新事件時發生了一些問題，希望你可以與我們聯絡來幫助我們改進 !");
         } finally {
-            if (res.status != 200) displayError("對不起 ... 發生技術性問題啦 T_T", "更新事件時發生了一些問題，希望你可以與我們聯絡來幫助我們改進 !");
+            if (res != null && res.status != 200) displayError("對不起 ... 發生技術性問題啦 T_T", "更新事件時發生了一些問題，希望你可以與我們聯絡來幫助我們改進 !");
         }
     }
 
@@ -293,7 +353,7 @@ class index extends React.Component {
         this.setState({
             removing: true
         });
-        var newdata = new User(this.state.userdata);
+        var newdata = this.state.userdata;
         newdata.calendars.map(calendar => {
             var targetEvent = null;
             calendar.events.map(event => {
@@ -316,11 +376,11 @@ class index extends React.Component {
         } catch (err) {
             displayError("對不起 ... 發生技術性問題啦 T_T", "刪除事件時發生了一些問題，希望你可以與我們聯絡來幫助我們改進 !");
         } finally {
-            if (res.status != 200) displayError("對不起 ... 發生技術性問題啦 T_T", "刪除事件時發生了一些問題，希望你可以與我們聯絡來幫助我們改進 !");
+            if (res != null && res.status != 200) displayError("對不起 ... 發生技術性問題啦 T_T", "刪除事件時發生了一些問題，希望你可以與我們聯絡來幫助我們改進 !");
         }
     }
 
-    handleFormChange(value) {
+    handleFormChange(value: inputing) {
         this.setState({
             inputing: {
                 ignoreReason: value.ignoreReason,
