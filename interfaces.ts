@@ -32,6 +32,11 @@ export interface EventCardProps {
     openEventCreateDialog(): void
 }
 
+/** EvnetCard 組件 States */
+export interface EventCardState {
+    hover: boolean
+}
+
 /** EditEventDialog 組件 Props */
 export interface EditEventDialogProps {
     inputing: Inputing,

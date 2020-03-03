@@ -9,7 +9,6 @@ import AllDayEvents from "../comps/AllDayEvents";
 import EditEventDialog from "../comps/EditEventDialog";
 import CreateEventDialog from "../comps/CreateEventDialog";
 import CreateRepeatDialog from "../comps/CreateRepeatDialog";
-import HourLines from "../comps/HourLines";
 import { User, Event, Repeat, Calendar } from "../classes";
 import { IndexStates, IndexProps, Inputing } from "../interfaces";
 import { backendURL, duration, defaultStyle, transitionStyles } from "../config";

@@ -1,11 +1,14 @@
 import React, { CSSProperties } from "react";
-import { EventCardProps } from "../interfaces";
+import { EventCardProps, EventCardState } from "../interfaces";
 
 import { FlexboxGrid, Whisper, Popover, Panel } from "rsuite";
 
-class EventCard extends React.Component<EventCardProps> {
+class EventCard extends React.Component<EventCardProps, EventCardState> {
     constructor(props: Readonly<EventCardProps>) {
         super(props);
+        this.state = {
+            hover: false
+        }
         this.handleClick = this.handleClick.bind(this);
     }
 
@@ -22,8 +25,7 @@ class EventCard extends React.Component<EventCardProps> {
             paddingLeft: 16,
             paddingTop: 10,
             paddingBottom: 6,
-            opacity: event.ignore ? 0.2 : 1,
-
+            opacity: event.ignore ? 0.2 : 1
         };
 
         const gridStyle: CSSProperties = {
@@ -93,7 +95,7 @@ class EventCard extends React.Component<EventCardProps> {
                         {event.getStartTimeSrting()}
                     </FlexboxGrid.Item>
                     <FlexboxGrid.Item colspan={18}>
-                        <Panel style={style} onClick={this.handleClick} key={event.id} bodyFill>
+                        <Panel style={style} onClick={this.handleClick} key={event.id} className="EventCard" bodyFill>
                             {eventInfo.slice(0, lineAmount).map(info => {
                                 return info;
                             })}
