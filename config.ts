@@ -1,7 +1,7 @@
 
 /** 後端位置 */
-// export const backendURL = "https://calendar.linyuanlin.com";
-export const backendURL = "http://localhost:3000";
+export const backendURL = "https://calendar.linyuanlin.com";
+// export const backendURL = "http://localhost:3000";
 
 /** 動畫參數 */
 export const duration = 600;
