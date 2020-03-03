@@ -1,7 +1,7 @@
 import React from "react";
 import { CreateRepeatDialogProps } from "../interfaces";
 
-import { Button, Form, FormGroup, FormControl, ControlLabel, CheckboxGroup, Checkbox, SelectPicker, Modal } from "rsuite";
+import { Button, Form, FormGroup, FormControl, ControlLabel, CheckboxGroup, Checkbox, SelectPicker, Modal, Toggle } from "rsuite";
 import { Calendar } from "../classes";
 
 class CreateRepeatDialog extends React.Component<CreateRepeatDialogProps> {
@@ -12,7 +12,7 @@ class CreateRepeatDialog extends React.Component<CreateRepeatDialogProps> {
         if (this.props.inputing == undefined || this.props.inputing.cycle == undefined) return null;
 
         var time = <p />;
-        if (this.props.inputing.allday == undefined || !this.props.inputing.allday.includes("allday"))
+        if (this.props.inputing.allday == undefined || !this.props.inputing.allday)
             time = (
                 <FormGroup>
                     <ControlLabel>時間</ControlLabel>
@@ -78,11 +78,18 @@ class CreateRepeatDialog extends React.Component<CreateRepeatDialogProps> {
                         </FormGroup>
                         {repeatData}
                         <FormGroup>
-                            <FormControl accepter={CheckboxGroup} name="allday">
-                                <Checkbox value="allday">全天事件</Checkbox>
-                            </FormControl>
+                            <ControlLabel>全天事件</ControlLabel>
+                            <FormControl accepter={Toggle} name="allday" />
                         </FormGroup>
                         {time}
+                        <FormGroup>
+                            <ControlLabel>詳細敘述</ControlLabel>
+                            <FormControl name="description" />
+                        </FormGroup>
+                        <FormGroup>
+                            <ControlLabel>地點</ControlLabel>
+                            <FormControl name="location" />
+                        </FormGroup>
                     </Form>
                 </Modal.Body>
                 <Modal.Footer>

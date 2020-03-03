@@ -34,10 +34,7 @@ export interface EventCardProps {
 
 /** EditEventDialog 組件 Props */
 export interface EditEventDialogProps {
-    inputing: {
-        ignore: Array<string>,
-        allday: Array<string>,
-    },
+    inputing: Inputing,
     editingEvent: boolean,
     removing: boolean,
     waiting: boolean,
@@ -90,12 +87,14 @@ export interface Inputing {
     title: string,
     date: string,
     time: string,
-    ignore: Array<string>,
+    ignore: boolean,
     ignoreReason: string,
-    allday: Array<string>,
+    allday: boolean,
     calendar: { label: string, value: Calendar },
     startDate: string,
     endDate: string,
     cycle: string,
-    repeatData: number
+    repeatData: number,
+    description: string, 
+    location: string
 }

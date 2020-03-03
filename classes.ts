@@ -13,8 +13,14 @@ const defaultEvent: Event = {
     isEmpty: true,
     title: "",
     color: [""],
+    getDurationBetweenDayBegin(): number {
+        return this.startTime.getHours() * 60 + this.startTime.getMinutes();
+    },
+    getDurationBetweenDayEnd(): number {
+        return (23 - this.endTime.getHours()) * 60 + (60 - this.endTime.getMinutes());
+    },
     getDuration(): number {
-        return Math.floor((this.endTime.getTime() - this.startTime.getTime()) / 60000);
+        return this.endTime.getHours() * 60 + this.endTime.getMinutes() - this.startTime.getHours() * 60 - this.startTime.getMinutes();
     },
     isAllDayEvent() {
         return this.getDuration() >= 1440;
@@ -60,6 +66,16 @@ export class Event {
         this.color = JSONObject.color;
     }
 
+    /** 從當天凌晨到事件開始的分鐘數 */
+    getDurationBetweenDayBegin(): number {
+        return this.startTime.getHours() * 60 + this.startTime.getMinutes();
+    }
+
+    /** 從事件結束到當天結束的分鐘數 */
+    getDurationBetweenDayEnd(): number {
+        return (23 - this.endTime.getHours()) * 60 + (60 - this.endTime.getMinutes());
+    }
+
     getDuration(): number {
         return Math.floor((this.endTime.getTime() - this.startTime.getTime()) / 60000);
     }
@@ -92,8 +108,9 @@ const defaultRepeat: Repeat = {
     cycle: "",
     repeatData: 0,
     generated: [],
-    calendarTitle: ""
-
+    calendarTitle: "",
+    location: "",
+    description: ""
 }
 
 export class Repeat {
@@ -108,6 +125,8 @@ export class Repeat {
     repeatData: number;
     generated: Array<string>;
     calendarTitle: string;
+    description: string;
+    location: string;
 
     constructor(JSONObject: Repeat = defaultRepeat) {
         this.id = JSONObject.id == "" ? generateUUID() : JSONObject.id;
@@ -120,6 +139,8 @@ export class Repeat {
         this.repeatData = JSONObject.repeatData;
         this.generated = JSONObject.generated == undefined ? [] : JSONObject.generated;
         this.calendarTitle = JSONObject.calendarTitle;
+        this.description = JSONObject.description;
+        this.location = JSONObject.location;
     }
 }
 

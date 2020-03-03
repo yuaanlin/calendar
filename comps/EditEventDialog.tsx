@@ -1,5 +1,5 @@
 import React from "react";
-import { Button, FlexboxGrid, Form, FormGroup, FormControl, ControlLabel, CheckboxGroup, Checkbox, Modal, Avatar } from "rsuite";
+import { Button, FlexboxGrid, Form, FormGroup, FormControl, ControlLabel, CheckboxGroup, Checkbox, Modal, Avatar, Toggle } from "rsuite";
 import { EditEventDialogProps } from "../interfaces";
 
 class EditEventDialog extends React.Component<EditEventDialogProps> {
@@ -12,14 +12,14 @@ class EditEventDialog extends React.Component<EditEventDialogProps> {
 
         var ignoreReason = <p />;
         if (this.props.inputing.ignore != undefined)
-            ignoreReason = this.props.inputing.ignore.includes("ignore") ? (
+            ignoreReason = this.props.inputing.ignore ? (
                 <FormGroup>
                     <ControlLabel>忽略原因</ControlLabel>
                     <FormControl name="ignoreReason" />
                 </FormGroup>
             ) : <p />;
         var time = <p />;
-        if (this.props.inputing.allday == undefined || !this.props.inputing.allday.includes("allday"))
+        if (this.props.inputing.allday == undefined || !this.props.inputing.allday)
             time = (
                 <FormGroup>
                     <ControlLabel>時間</ControlLabel>
@@ -51,15 +51,21 @@ class EditEventDialog extends React.Component<EditEventDialogProps> {
                             <FormControl name="date" />
                         </FormGroup>
                         <FormGroup>
-                            <FormControl accepter={CheckboxGroup} name="allday">
-                                <Checkbox value="allday">全天事件</Checkbox>
-                            </FormControl>
+                            <ControlLabel>全天事件</ControlLabel>
+                            <FormControl accepter={Toggle} name="allday" />
                         </FormGroup>
                         {time}
                         <FormGroup>
-                            <FormControl accepter={CheckboxGroup} name="ignore">
-                                <Checkbox value="ignore">忽略該事項</Checkbox>
-                            </FormControl>
+                            <ControlLabel>詳細敘述</ControlLabel>
+                            <FormControl name="description" />
+                        </FormGroup>
+                        <FormGroup>
+                            <ControlLabel>地點</ControlLabel>
+                            <FormControl name="location" />
+                        </FormGroup>
+                        <FormGroup>
+                            <ControlLabel>已忽略的事件</ControlLabel>
+                            <FormControl accepter={Toggle} name="ignore" />
                         </FormGroup>
                         {ignoreReason}
                     </Form>

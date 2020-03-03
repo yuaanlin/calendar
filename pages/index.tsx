@@ -1,4 +1,4 @@
-import React, { Props } from "react";
+import React from "react";
 import { Helmet } from "react-helmet";
 import DayPicker from "react-day-picker";
 import fetch from "isomorphic-unfetch";
@@ -9,12 +9,13 @@ import AllDayEvents from "../comps/AllDayEvents";
 import EditEventDialog from "../comps/EditEventDialog";
 import CreateEventDialog from "../comps/CreateEventDialog";
 import CreateRepeatDialog from "../comps/CreateRepeatDialog";
+import HourLines from "../comps/HourLines";
 import { User, Event, Repeat, Calendar } from "../classes";
 import { IndexStates, IndexProps, Inputing } from "../interfaces";
 import { backendURL, duration, defaultStyle, transitionStyles } from "../config";
-import { getDayDescription, displayError, eventsToDispay, allDayEventsToDispay, fillEvents, buildRepeatToEvent, createEvent } from "../utils/methods";
+import { getDayDescription, displayError, eventsToDispay, allDayEventsToDispay, buildRepeatToEvent, createEvent } from "../utils/methods";
 
-import { Loader, Panel, Container, FlexboxGrid, Col } from "rsuite";
+import { Loader, Panel, Container, FlexboxGrid, Col, Divider } from "rsuite";
 
 import "rsuite/lib/styles/themes/dark/index.less";
 import "../style.less";
@@ -38,13 +39,15 @@ class index extends React.Component<IndexProps, IndexStates> {
                 title: "",
                 date: "",
                 time: "",
-                ignore: [],
+                ignore: false,
                 ignoreReason: "",
-                allday: [],
+                allday: false,
                 calendar: { label: "", value: new Calendar() },
                 startDate: "",
                 endDate: "",
                 cycle: "",
+                description: "",
+                location: "",
                 repeatData: 0
             }
         };
@@ -77,8 +80,7 @@ class index extends React.Component<IndexProps, IndexStates> {
             const json = await res.json();
             var userdata = new User(json);
             var etd = eventsToDispay(userdata.calendars, new Date());
-            var filled = fillEvents(eventsToDispay(userdata.calendars, new Date()), new Date());
-            return { userdata: userdata, filled: filled, eventsToDispay: etd };
+            return { userdata: userdata, eventsToDispay: etd };
         } catch (err) {
             displayError("發生錯誤 T_T", err);
         }
@@ -86,9 +88,7 @@ class index extends React.Component<IndexProps, IndexStates> {
 
     componentDidMount() {
         setTimeout(() => {
-            var etd = eventsToDispay(this.props.userdata.calendars, new Date());
-            var filled = fillEvents(etd, new Date());
-            this.setState({ filled: filled, userdata: this.props.userdata, loaded: true });
+            this.setState({ userdata: this.props.userdata, loaded: true });
         }, 200);
     }
 
@@ -100,14 +100,16 @@ class index extends React.Component<IndexProps, IndexStates> {
                 title: event.title,
                 date: event.startTime.getFullYear() + "/" + (event.startTime.getMonth() + 1) + "/" + event.startTime.getDate(),
                 time: event.startTime.getHours() + ":" + event.startTime.getMinutes() + "~" + event.endTime.getHours() + ":" + event.endTime.getMinutes(),
-                ignore: [event.ignore ? "ignore" : ""],
+                ignore: event.ignore,
                 ignoreReason: event.ignoreReason == undefined ? "" : event.ignoreReason,
-                allday: [event.isAllDayEvent() ? "allday" : ""],
+                allday: event.isAllDayEvent(),
                 calendar: { label: "", value: new Calendar() },
                 startDate: "",
                 endDate: "",
                 cycle: "",
-                repeatData: 0
+                repeatData: 0,
+                description: event.description,
+                location: event.location
             }
         });
     }
@@ -124,12 +126,15 @@ class index extends React.Component<IndexProps, IndexStates> {
                 date: this.state.selectedDay.getFullYear() + "/" + (this.state.selectedDay.getMonth() + 1) + "/" + this.state.selectedDay.getDate(),
                 time: new Date().getHours() + ":" + new Date().getMinutes() + "~" + (new Date().getHours() + 1) + ":" + new Date().getMinutes(),
                 calendar: { label: this.state.userdata.calendars[0].title, value: this.state.userdata.calendars[0] },
-                allday: [],
-                ignore: [],
+                allday: false,
+                ignore: false,
                 ignoreReason: "",
                 startDate: "",
                 endDate: "",
                 cycle: "",
+
+                description: "",
+                location: "",
                 repeatData: 0
             }
         });
@@ -147,9 +152,11 @@ class index extends React.Component<IndexProps, IndexStates> {
                 repeatData: 0,
                 time: new Date().getHours() + ":" + new Date().getMinutes() + "~" + (new Date().getHours() + 1) + ":" + new Date().getMinutes(),
                 calendar: { label: this.state.userdata.calendars[0].title, value: this.state.userdata.calendars[0] },
-                allday: [],
+                allday: false,
                 date: "",
-                ignore: [],
+                description: "",
+                location: "",
+                ignore: false,
                 ignoreReason: ""
             }
         });
@@ -171,7 +178,7 @@ class index extends React.Component<IndexProps, IndexStates> {
         var newEndTime = new Date();
         newStartTime.setFullYear(+this.state.inputing.date.split("/")[0], +this.state.inputing.date.split("/")[1] - 1, +this.state.inputing.date.split("/")[2]);
         newEndTime.setFullYear(+this.state.inputing.date.split("/")[0], +this.state.inputing.date.split("/")[1] - 1, +this.state.inputing.date.split("/")[2]);
-        if (this.state.inputing.allday.includes("allday")) {
+        if (this.state.inputing.allday) {
             newStartTime.setHours(0, 0);
             newEndTime.setHours(24, 0);
         } else {
@@ -181,14 +188,13 @@ class index extends React.Component<IndexProps, IndexStates> {
         var newdata = this.state.userdata;
         newdata.calendars.map(calendar => {
             if (calendar.title == this.state.inputing.calendar.label) {
-                calendar.events.push(createEvent(this.state.inputing.title, calendar.color, newStartTime, newEndTime, ""));
+                calendar.events.push(createEvent(this.state.inputing.title, calendar.color, newStartTime, newEndTime, "", false, false, this.state.inputing.description, this.state.inputing.location));
             }
         });
 
         // 更新視圖
         var etd = eventsToDispay(newdata.calendars, new Date());
-        var filled = fillEvents(eventsToDispay(newdata.calendars, new Date()), new Date());
-        this.setState({ userdata: newdata, filled: filled, eventsToDispay: etd, waiting: false, creatingEvent: false });
+        this.setState({ userdata: newdata, eventsToDispay: etd, waiting: false, creatingEvent: false });
 
         // 上傳更新到資料庫
         var res = null;
@@ -229,7 +235,7 @@ class index extends React.Component<IndexProps, IndexStates> {
             +this.state.inputing.startDate.split("/")[1] - 1,
             +this.state.inputing.startDate.split("/")[2]
         );
-        if (this.state.inputing.allday.includes("allday")) {
+        if (this.state.inputing.allday) {
             newStartTime.setHours(0, 0);
             newEndTime.setHours(24, 0);
         } else {
@@ -247,14 +253,15 @@ class index extends React.Component<IndexProps, IndexStates> {
                 newRepeat.endTime = newEndTime;
                 newRepeat.cycle = this.state.inputing.cycle;
                 newRepeat.repeatData = this.state.inputing.repeatData;
+                newRepeat.description = this.state.inputing.description;
+                newRepeat.location = this.state.inputing.location;
                 calendar.repeats.push(newRepeat);
             }
         });
 
         // 更新視圖
         var etd = eventsToDispay(newdata.calendars, new Date());
-        var filled = fillEvents(eventsToDispay(newdata.calendars, new Date()), new Date());
-        this.setState({ userdata: newdata, filled: filled, eventsToDispay: etd, waiting: false, creatingRepeat: false });
+        this.setState({ userdata: newdata, eventsToDispay: etd, waiting: false, creatingRepeat: false });
 
         // 上傳變更到數據庫
         var res = null;
@@ -275,7 +282,7 @@ class index extends React.Component<IndexProps, IndexStates> {
         var newEndTime = new Date();
         newStartTime.setFullYear(+this.state.inputing.date.split("/")[0], +this.state.inputing.date.split("/")[1] - 1, +this.state.inputing.date.split("/")[2]);
         newEndTime.setFullYear(+this.state.inputing.date.split("/")[0], +this.state.inputing.date.split("/")[1] - 1, +this.state.inputing.date.split("/")[2]);
-        if (this.state.inputing.allday.includes("allday")) {
+        if (this.state.inputing.allday) {
             newStartTime.setHours(0, 0);
             newEndTime.setHours(24, 0);
         } else {
@@ -289,16 +296,17 @@ class index extends React.Component<IndexProps, IndexStates> {
                     event.startTime = newStartTime;
                     event.endTime = newEndTime;
                     event.title = this.state.inputing.title;
-                    event.ignore = this.state.inputing.ignore.includes("ignore") ? true : false;
+                    event.ignore = this.state.inputing.ignore;
                     event.ignoreReason = this.state.inputing.ignoreReason;
+                    event.description = this.state.inputing.description;
+                    event.location = this.state.inputing.location;
                 }
             });
         });
 
         // 更新視圖
         var etd = eventsToDispay(newdata.calendars, new Date());
-        var filled = fillEvents(eventsToDispay(newdata.calendars, new Date()), new Date());
-        this.setState({ userdata: newdata, filled: filled, eventsToDispay: etd, waiting: false, editingEvent: false });
+        this.setState({ userdata: newdata, eventsToDispay: etd, waiting: false, editingEvent: false });
 
         // 上傳變更到資料庫
         var res = null;
@@ -328,8 +336,7 @@ class index extends React.Component<IndexProps, IndexStates> {
 
         // 更新視圖
         var etd = eventsToDispay(newdata.calendars, new Date());
-        var filled = fillEvents(eventsToDispay(newdata.calendars, new Date()), new Date());
-        this.setState({ userdata: newdata, filled: filled, eventsToDispay: etd, removing: false, editingEvent: false });
+        this.setState({ userdata: newdata, eventsToDispay: etd, removing: false, editingEvent: false });
 
         // 上傳變更到資料庫
         var res = null;
@@ -355,7 +362,9 @@ class index extends React.Component<IndexProps, IndexStates> {
                 title: value.title,
                 allday: value.allday,
                 startDate: value.startDate,
-                endDate: value.endDate
+                endDate: value.endDate,
+                description: value.description,
+                location: value.location
             }
         });
     }
@@ -364,13 +373,17 @@ class index extends React.Component<IndexProps, IndexStates> {
         var DayviewContent = <Loader />;
         var AllDayEventsContent = <Loader />;
         if (this.state.userdata.calendars != undefined) {
-            var filled = fillEvents(eventsToDispay(this.state.userdata.calendars, this.state.selectedDay), this.state.selectedDay);
-            var allDayEvents = allDayEventsToDispay(this.state.userdata.calendars, this.state.selectedDay);
-            DayviewContent = <DayView events={filled} openEventEditDialog={this.openEventEditDialog} openEventCreateDialog={this.openEventCreateDialog} />;
+            var etd = eventsToDispay(this.state.userdata.calendars, this.state.selectedDay);
+            var ade = allDayEventsToDispay(this.state.userdata.calendars, this.state.selectedDay);
+            DayviewContent = <DayView events={etd} openEventEditDialog={this.openEventEditDialog} openEventCreateDialog={this.openEventCreateDialog} />;
             AllDayEventsContent = (
-                <AllDayEvents events={allDayEvents} openEventEditDialog={this.openEventEditDialog} openEventCreateDialog={this.openEventCreateDialog} />
+                <AllDayEvents events={ade} openEventEditDialog={this.openEventEditDialog} openEventCreateDialog={this.openEventCreateDialog} />
             );
         }
+        var Hours = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23];
+        var HourLines = Hours.map(hour => {
+            return <Divider key={hour} style={{ position: "absolute", top: hour * 60, width: "100%", margin: 0 }} />
+        })
 
         var dayDescription = getDayDescription(this.state.selectedDay);
 
@@ -415,27 +428,36 @@ class index extends React.Component<IndexProps, IndexStates> {
                                 </div>
                             </FlexboxGrid.Item>
                             <FlexboxGrid.Item colspan={14}>
-                                <Panel style={{ marginLeft: 60 }} bodyFill>
-                                    <div
-                                        style={{
-                                            overflowY: "scroll",
-                                            maxHeight: "100vh",
-                                            padding: 48
-                                        }}
-                                    >
-                                        <Transition in={this.state.loaded} timeout={duration}>
-                                            {state => (
-                                                <div
-                                                    style={{
-                                                        ...defaultStyle,
-                                                        ...transitionStyles[state]
-                                                    }}
-                                                >
-                                                    {DayviewContent}
-                                                </div>
-                                            )}
-                                        </Transition>
+                                <Panel style={{ marginLeft: 60 }} bodyFill onDoubleClick={this.openEventCreateDialog}>
+                                    <div style={{
+                                        overflowY: "scroll",
+                                        height: "100vh",
+                                    }}>
+                                        <div
+                                            style={{
+                                                height: 1420,
+                                                margin: 48,
+                                                position: "relative"
+                                            }}
+                                        >
+
+                                            {HourLines}
+
+                                            <Transition in={this.state.loaded} timeout={duration}>
+                                                {state => (
+                                                    <div
+                                                        style={{
+                                                            ...defaultStyle,
+                                                            ...transitionStyles[state]
+                                                        }}
+                                                    >
+                                                        {DayviewContent}
+                                                    </div>
+                                                )}
+                                            </Transition>
+                                        </div>
                                     </div>
+
                                 </Panel>
                             </FlexboxGrid.Item>
                         </FlexboxGrid>

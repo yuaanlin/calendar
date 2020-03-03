@@ -59,30 +59,8 @@ export function endOfDay(date: Date) {
     return time;
 }
 
-
-/** 將傳入的 Event Array 用 Empty Event 填滿空白的時間段 */
-export function fillEvents(events: Array<Event>, date: Date) {
-    var filled = new Array();
-    var time = startOfDay(date);
-    events.map(event => {
-        var startTime = new Date(event.startTime);
-        var endTime = new Date(event.endTime);
-        if (startTime.getHours() > endTime.getHours()) {
-            endTime.setHours(23, 59, 59);
-        }
-        var emptyEvent = new Event();
-        emptyEvent.startTime = new Date(time);
-        emptyEvent.endTime = new Date(startTime);
-        filled.push(emptyEvent);
-        filled.push(event);
-        time.setTime(endTime.getTime());
-    });
-    filled.push(createEvent("", [], new Date(time), endOfDay(date), "", false, true));
-    return filled;
-}
-
 /** 透過參數建立新 Event */
-export function createEvent(name: string, color: Array<string>, startTime: Date, endTime: Date, repeatID: string, ignore: boolean = false, isEmpty: boolean = false) {
+export function createEvent(name: string, color: Array<string>, startTime: Date, endTime: Date, repeatID: string, ignore: boolean = false, isEmpty: boolean = false, description: string = "", location: string = "") {
     var newEvent = new Event();
     newEvent.title = name;
     newEvent.color = color;
@@ -91,6 +69,8 @@ export function createEvent(name: string, color: Array<string>, startTime: Date,
     newEvent.ignore = ignore;
     newEvent.isEmpty = isEmpty;
     newEvent.repeatID = repeatID;
+    newEvent.description = description;
+    newEvent.location = location;
     return (newEvent);
 }
 
