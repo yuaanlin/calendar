@@ -1,24 +1,28 @@
 import React from "react";
+import { CreateEventDialogProps } from "../interfaces";
 
 import { FlexboxGrid, Button, Form, FormGroup, FormControl, ControlLabel, CheckboxGroup, Checkbox, SelectPicker, Modal } from "rsuite";
+import { Calendar } from "../classes";
 
-class CreateEventDialog extends React.Component {
-    constructor(props) {
+class CreateEventDialog extends React.Component<CreateEventDialogProps> {
+    constructor(props: Readonly<CreateEventDialogProps>) {
         super(props);
     }
 
     render() {
         if (this.props.inputing == undefined) return null;
 
+        var time = <p />;
         if (this.props.inputing.allday == undefined || !this.props.inputing.allday.includes("allday"))
-            var time = (
+            time = (
                 <FormGroup>
                     <ControlLabel>時間</ControlLabel>
                     <FormControl name="time" />
                 </FormGroup>
             );
+        var calendarOptions: Array<{ label: string, value: Calendar }> = [];
         if (this.props.userdata.calendars != undefined) {
-            var calendarOptions = this.props.userdata.calendars.map(calendar => {
+            calendarOptions = this.props.userdata.calendars.map(calendar => {
                 return { label: calendar.title, value: calendar };
             });
         }

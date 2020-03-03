@@ -6,7 +6,7 @@ const client = new MongoClient("mongodb+srv://yuanlin:411612@cluster0-9wzb6.gcp.
     useUnifiedTopology: true
 });
 
-async function database(req, res, next) {
+async function database(req: { dbClient: any; db: any; }, _res: any, next: () => any) {
     if (!client.isConnected()) await client.connect();
     req.dbClient = client;
     req.db = client.db("calendar");

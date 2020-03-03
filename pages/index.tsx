@@ -10,51 +10,17 @@ import EditEventDialog from "../comps/EditEventDialog";
 import CreateEventDialog from "../comps/CreateEventDialog";
 import CreateRepeatDialog from "../comps/CreateRepeatDialog";
 import { User, Event, Repeat, Calendar } from "../classes";
+import { IndexStates, IndexProps, Inputing } from "../interfaces";
 import { backendURL, duration, defaultStyle, transitionStyles } from "../config";
-import { getDayDescription, displayError, eventsToDispay, allDayEventsToDispay, fillEvents, buildRepeatToEvent } from "../utils/methods";
+import { getDayDescription, displayError, eventsToDispay, allDayEventsToDispay, fillEvents, buildRepeatToEvent, createEvent } from "../utils/methods";
 
 import { Loader, Panel, Container, FlexboxGrid, Col } from "rsuite";
 
 import "rsuite/lib/styles/themes/dark/index.less";
 import "../style.less";
 
-interface inputing {
-    title: string,
-    date: string,
-    time: string,
-    ignore: Array<string>,
-    ignoreReason: string,
-    allday: Array<string>,
-    calendar: { label: string, value: Calendar },
-    startDate: string,
-    endDate: string,
-    cycle: string,
-    repeatData: number
-}
-
-interface State {
-    loaded: boolean,
-    waiting: boolean,
-    removing: boolean,
-    selectedDay: Date,
-    eventsToDispay: Array<Event>,
-    userdata: User,
-    filled: Array<Event>,
-    editingEvent: boolean,
-    creatingEvent: boolean,
-    creatingRepeat: boolean,
-    selectedEvent: Event,
-    inputing: inputing
-}
-
-interface Prop {
-    userdata: User,
-    filled: Array<Event>,
-    eventsToDispay: Array<Event>
-}
-
-class index extends React.Component<Prop, State> {
-    constructor(props: Readonly<Prop>) {
+class index extends React.Component<IndexProps, IndexStates> {
+    constructor(props: Readonly<IndexProps>) {
         super(props);
         this.state = {
             loaded: false,
@@ -120,7 +86,8 @@ class index extends React.Component<Prop, State> {
 
     componentDidMount() {
         setTimeout(() => {
-            var filled = fillEvents(this.props.eventsToDispay, new Date());
+            var etd = eventsToDispay(this.props.userdata.calendars, new Date());
+            var filled = fillEvents(etd, new Date());
             this.setState({ filled: filled, userdata: this.props.userdata, loaded: true });
         }, 200);
     }
@@ -214,12 +181,7 @@ class index extends React.Component<Prop, State> {
         var newdata = this.state.userdata;
         newdata.calendars.map(calendar => {
             if (calendar.title == this.state.inputing.calendar.label) {
-                var newEvent = new Event();
-                newEvent.title = this.state.inputing.title;
-                newEvent.startTime = newStartTime;
-                newEvent.endTime = newEndTime;
-                newEvent.color = calendar.color;
-                calendar.events.push(newEvent);
+                calendar.events.push(createEvent(this.state.inputing.title, calendar.color, newStartTime, newEndTime, ""));
             }
         });
 
@@ -380,7 +342,7 @@ class index extends React.Component<Prop, State> {
         }
     }
 
-    handleFormChange(value: inputing) {
+    handleFormChange(value: Inputing) {
         this.setState({
             inputing: {
                 ignoreReason: value.ignoreReason,

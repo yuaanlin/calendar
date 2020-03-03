@@ -1,21 +1,12 @@
 import React from "react";
 import EventCard from "./eventCard";
 import { FlexboxGrid } from "rsuite";
-import { Event } from "../classes";
+import { DayViewProps } from "../interfaces"
 
-class DayView extends React.Component {
-    constructor(props) {
-        super(props);
-        this.clickHandler = this.clickHandler.bind(this);
-    }
-
-    clickHandler = () => {
-        this.props.openEventEditDialog(this.props.event);
-    };
+class DayView extends React.Component<DayViewProps> {
 
     render() {
         return this.props.events.map(event => {
-            event = new Event(event, event.isEmpty);
             return (
                 <FlexboxGrid key={event.id} spacing={1}>
                     <FlexboxGrid.Item colspan={4}>
@@ -23,6 +14,7 @@ class DayView extends React.Component {
                     </FlexboxGrid.Item>
                     <FlexboxGrid.Item colspan={20}>
                         <EventCard
+                            height={-1}
                             event={event}
                             openEventEditDialog={this.props.openEventEditDialog}
                             openEventCreateDialog={this.props.openEventCreateDialog}

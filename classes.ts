@@ -1,23 +1,8 @@
 import { generateUUID } from "./utils/methods";
 
-interface EventObject {
-    startTime: string,
-    endTime: string,
-    location: string,
-    description: string,
-    id: string,
-    calendarTitle: string,
-    ignore: boolean,
-    ignoreReason: string,
-    repeatID: string,
-    isEmpty: boolean,
-    title: string,
-    color: Array<string>
-}
-
-const defaultEventObject : EventObject = {
-    startTime: "",
-    endTime: "",
+const defaultEvent: Event = {
+    startTime: new Date(),
+    endTime: new Date(),
     location: "",
     description: "",
     id: "",
@@ -27,14 +12,28 @@ const defaultEventObject : EventObject = {
     repeatID: "",
     isEmpty: true,
     title: "",
-    color: [""]
+    color: [""],
+    getDuration(): number {
+        return Math.floor((this.endTime.getTime() - this.startTime.getTime()) / 60000);
+    },
+    isAllDayEvent() {
+        return this.getDuration() >= 1440;
+    },
+    getStartTimeSrting() {
+        return this.startTime.getHours() + ":" + (this.startTime.getMinutes() < 10 ? "0" : "") + this.startTime.getMinutes();
+    },
+    getEndTimeSting() {
+        return this.endTime.getHours() + ":" + (this.endTime.getMinutes() < 10 ? "0" : "") + this.endTime.getMinutes();
+    },
+    getDurationString() {
+        return this.getStartTimeSrting() + " - " + this.getEndTimeSting();
+    }
 }
 
 export class Event {
 
     startTime: Date;
     endTime: Date;
-    duration: number;
     location: string;
     description: string;
     id: string;
@@ -46,13 +45,12 @@ export class Event {
     title: string;
     color: Array<string>;
 
-    constructor(JSONObject: EventObject = defaultEventObject) {
+    constructor(JSONObject: Event = defaultEvent) {
         this.startTime = new Date(JSONObject.startTime);
         this.endTime = new Date(JSONObject.endTime);
-        this.duration = Math.floor((this.endTime.getTime() - this.startTime.getTime()) / 60000);
         this.location = JSONObject.location == undefined ? "" : JSONObject.location;
         this.description = JSONObject.description == undefined ? "" : JSONObject.description;
-        this.id = JSONObject.id == undefined ? generateUUID() : JSONObject.id;
+        this.id = JSONObject.id == "" ? generateUUID() : JSONObject.id;
         this.calendarTitle = JSONObject.calendarTitle == undefined ? "" : JSONObject.calendarTitle;
         this.ignore = JSONObject.ignore == undefined ? false : JSONObject.ignore;
         this.ignoreReason = JSONObject.ignoreReason == (undefined || "") ? "" : JSONObject.ignoreReason;
@@ -62,8 +60,12 @@ export class Event {
         this.color = JSONObject.color;
     }
 
+    getDuration(): number {
+        return Math.floor((this.endTime.getTime() - this.startTime.getTime()) / 60000);
+    }
+
     isAllDayEvent() {
-        return this.duration >= 1440;
+        return this.getDuration() >= 1440;
     }
 
     getStartTimeSrting() {
@@ -79,26 +81,14 @@ export class Event {
     }
 }
 
-interface RepeatObject {
-    id: string,
-    name: string,
-    startDate: string,
-    endDate: string,
-    startTime: string,
-    endTime: string,
-    cycle: string,
-    repeatData: number,
-    generated: Array<string>,
-    calendarTitle: string
-}
 
-const defaultRepeatObject : RepeatObject = {
+const defaultRepeat: Repeat = {
     id: "",
     name: "",
-    startDate: "",
-    endDate: "",
-    startTime: "",
-    endTime: "",
+    startDate: new Date(),
+    endDate: new Date(),
+    startTime: new Date(),
+    endTime: new Date(),
     cycle: "",
     repeatData: 0,
     generated: [],
@@ -117,9 +107,10 @@ export class Repeat {
     cycle: string;
     repeatData: number;
     generated: Array<string>;
+    calendarTitle: string;
 
-    constructor(JSONObject: RepeatObject = defaultRepeatObject) {
-        this.id = JSONObject.id == undefined ? generateUUID() : JSONObject.id;
+    constructor(JSONObject: Repeat = defaultRepeat) {
+        this.id = JSONObject.id == "" ? generateUUID() : JSONObject.id;
         this.name = JSONObject.name;
         this.startDate = new Date(JSONObject.startDate);
         this.endDate = new Date(JSONObject.endDate);
@@ -128,20 +119,13 @@ export class Repeat {
         this.cycle = JSONObject.cycle;
         this.repeatData = JSONObject.repeatData;
         this.generated = JSONObject.generated == undefined ? [] : JSONObject.generated;
+        this.calendarTitle = JSONObject.calendarTitle;
     }
 }
 
-interface CalendarObject {
-    title: string,
-    color: Array<string>,
-    label: string,
-    events: Array<EventObject>,
-    repeats: Array<RepeatObject>
-}
-
-const defaultCalendarObject : CalendarObject = {
+const defaultCalendar: Calendar = {
     title: "",
-    color: [],
+    color: ["#ffffff", "#ffffff"],
     label: "",
     events: [],
     repeats: []
@@ -155,7 +139,7 @@ export class Calendar {
     events: Array<Event>;
     repeats: Array<Repeat>;
 
-    constructor(JSONObject: CalendarObject = defaultCalendarObject) {
+    constructor(JSONObject: Calendar = defaultCalendar) {
         this.title = JSONObject.title;
         this.color = JSONObject.color;
         this.label = this.title;
@@ -170,12 +154,7 @@ export class Calendar {
     }
 }
 
-interface UserObject {
-    username: string,
-    calendars: Array<CalendarObject>
-}
-
-const defaultUserObject : UserObject = {
+const defaultUser: User = {
     username: "",
     calendars: []
 }
@@ -185,7 +164,7 @@ export class User {
     username: string;
     calendars: Array<Calendar>;
 
-    constructor(JSONObject: UserObject = defaultUserObject) {
+    constructor(JSONObject: User = defaultUser) {
         this.username = JSONObject.username;
         this.calendars = JSONObject.calendars.map(calendar => {
             return new Calendar(calendar);

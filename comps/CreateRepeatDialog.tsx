@@ -1,23 +1,28 @@
 import React from "react";
+import { CreateRepeatDialogProps } from "../interfaces";
 
 import { Button, Form, FormGroup, FormControl, ControlLabel, CheckboxGroup, Checkbox, SelectPicker, Modal } from "rsuite";
+import { Calendar } from "../classes";
 
-class CreateRepeatDialog extends React.Component {
-    constructor(props) {
+class CreateRepeatDialog extends React.Component<CreateRepeatDialogProps> {
+    constructor(props: Readonly<CreateRepeatDialogProps>) {
         super(props);
     }
     render() {
         if (this.props.inputing == undefined || this.props.inputing.cycle == undefined) return null;
 
+        var time = <p />;
         if (this.props.inputing.allday == undefined || !this.props.inputing.allday.includes("allday"))
-            var time = (
+            time = (
                 <FormGroup>
                     <ControlLabel>時間</ControlLabel>
                     <FormControl name="time" />
                 </FormGroup>
             );
+
+        var calendarOptions: Array<{ label: string, value: Calendar }> = [];
         if (this.props.userdata.calendars != undefined) {
-            var calendarOptions = this.props.userdata.calendars.map(calendar => {
+            calendarOptions = this.props.userdata.calendars.map(calendar => {
                 return { label: calendar.title, value: calendar };
             });
         }
