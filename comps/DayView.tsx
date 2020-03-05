@@ -8,7 +8,7 @@ class DayView extends React.Component<DayViewProps> {
         return this.props.events.map(event => {
             return (
                 <EventCard
-                key={event.id}
+                    key={event.id}
                     height={-1}
                     event={event}
                     openEventEditDialog={this.props.openEventEditDialog}

@@ -1,5 +1,6 @@
 import { Notification } from "rsuite";
 import { Event, Calendar, Repeat, User } from "../classes";
+import react from "react";
 
 /** 產生一組 UUID 給任意物件使用 */
 export function generateUUID() {
@@ -12,6 +13,67 @@ export function generateUUID() {
         d = Math.floor(d / 16);
         return (c === "x" ? r : (r & 0x3) | 0x8).toString(16);
     });
+}
+
+/** 建構事件彈窗資訊 
+ * Compose EvnetCrad Popover Content */
+export function getEventPopoverContent(event: Event) {
+    var popoverContent = [];
+    popoverContent.push(event.calendarTitle);
+    if (event.ignore) popoverContent.push(<p>該事件已被忽略，因為{event.ignoreReason} </p>);
+    popoverContent.push(<p>{event.getDurationString()} </p>);
+    if (event.location != "") popoverContent.push(<p>{event.location} </p>);
+    if (event.description != "") popoverContent.push(<p>{event.description} </p>);
+    return popoverContent;
+}
+
+/** 用卡片高度計算卡片要顯示幾行資訊 
+ * Calculate the line Amount of Event Card Info */
+export function getLineAmount(event: Event, height: number) {
+    return (height >= 0
+        ? Math.floor(height / 20) > 1
+            ? Math.floor(height / 20) - 1
+            : 1
+        : Math.floor(event.getDuration() / 20) > 1
+            ? Math.floor(event.getDuration() / 20) - 1
+            : 1);
+
+}
+
+/** 建構事件卡片資訊 
+ * Compose Info in EvnetCrad */
+export function getEventCardInfo(event: Event) {
+    var eventInfo = [];
+    eventInfo.push(
+        event.isAllDayEvent() ? (
+            <p key="title" style={{ color: "white" }}>
+                {event.title}{" "}
+            </p>
+        ) : (
+                <p key="title" style={{ color: "white" }}>
+                    {event.title}{" "}
+                    <strong style={{ marginLeft: 16, color: "rgba(255,255,255,0.4)" }}>{event.getDurationString()}</strong>
+                </p>
+            )
+    );
+    if (event.description != "") eventInfo.push(<p style={{ color: "rgba(255,255,255,0.8)" }} key="description">
+        {event.description}
+    </p>)
+    if (event.location != "") eventInfo.push(<p style={{ color: "rgba(255,255,255,0.8)" }} key="location">
+        {event.location}
+    </p>)
+    if (!event.isAllDayEvent())
+        eventInfo.push(
+            <p style={{ color: "rgba(255,255,255,0.8)" }} key="duration">
+                {event.getDuration()} 分鐘
+                        </p>
+        );
+    eventInfo.push(
+        <p style={{ color: "rgba(255,255,255,0.8)" }} key="cal">
+            {event.calendarTitle}
+        </p>
+    );
+    return eventInfo;
 }
 
 /**
@@ -27,8 +89,8 @@ export function getDayDescription(date: Date) {
     DayB.setHours(12, 0, 0);
     if (Math.floor((DayA.getTime() - DayB.getTime()) / 3600000) < 0) {
         if (DayA.getFullYear() == DayB.getFullYear() && DayA.getMonth() == DayB.getMonth() && DayA.getDate() == DayB.getDate()) dayDescription = "今天";
-        else if (DayA.getFullYear() == DayB.getFullYear() && DayA.getMonth() == DayB.getMonth() && (DayA.getDate()+1) == DayB.getDate()) dayDescription = "昨天";
-        else if (DayA.getFullYear() == DayB.getFullYear() && DayA.getMonth() == DayB.getMonth() && (DayA.getDate()+2) == DayB.getDate()) dayDescription = "前天";
+        else if (DayA.getFullYear() == DayB.getFullYear() && DayA.getMonth() == DayB.getMonth() && (DayA.getDate() + 1) == DayB.getDate()) dayDescription = "昨天";
+        else if (DayA.getFullYear() == DayB.getFullYear() && DayA.getMonth() == DayB.getMonth() && (DayA.getDate() + 2) == DayB.getDate()) dayDescription = "前天";
         else dayDescription = Math.floor((DayA.getTime() - DayB.getTime()) / 3600000 / -24) + " 天前";
     } else {
         if (Math.floor((DayA.getTime() - DayB.getTime()) / 3600000) == 0) dayDescription = "今天";
@@ -64,7 +126,7 @@ export function endOfDay(date: Date) {
 }
 
 /** 透過參數建立新 Event */
-export function createEvent(name: string, color: Array<string>, startTime: Date, endTime: Date, repeatID: string, ignore: boolean = false, isEmpty: boolean = false, description: string = "", location: string = "") {
+export function createEvent(name: string, color: Array<string>, startTime: Date, endTime: Date, repeatID: string, ignore: boolean = false, isEmpty: boolean = false, description: string = "", location: string = "", calendarTitle: string) {
     var newEvent = new Event();
     newEvent.title = name;
     newEvent.color = color;
@@ -75,15 +137,19 @@ export function createEvent(name: string, color: Array<string>, startTime: Date,
     newEvent.repeatID = repeatID;
     newEvent.description = description;
     newEvent.location = location;
+    newEvent.calendarTitle = calendarTitle;
     return (newEvent);
 }
 
 export function buildRepeatToEvent(userdata: User, date: Date) {
+    date.setHours(12, 0);
     var newdata = new User(userdata);
     newdata.calendars.map(calendar => {
         calendar.repeats.map(repeat => {
-            repeat = new Repeat(repeat)
-            if (date.getTime() - repeat.startDate.getTime() > 0 && repeat.endDate.getTime() - date.getTime() > 0) {
+            repeat = new Repeat(repeat);
+            repeat.startDate.setHours(12, 0);
+            repeat.endDate.setHours(12, 0);
+            if (date.getTime() - repeat.startDate.getTime() >= 0 && repeat.endDate.getTime() - date.getTime() >= 0) {
 
                 if (
                     repeat.cycle == "Week" &&
@@ -95,7 +161,7 @@ export function buildRepeatToEvent(userdata: User, date: Date) {
                     var endTime = new Date(date);
                     startTime.setHours(repeat.startTime.getHours(), repeat.startTime.getMinutes());
                     endTime.setHours(repeat.endTime.getHours(), repeat.endTime.getMinutes());
-                    calendar.events.push(createEvent(repeat.name, calendar.color, startTime, endTime, repeat.id, false, false));
+                    calendar.events.push(createEvent(repeat.name, calendar.color, startTime, endTime, repeat.id, false, false, "", "", calendar.title));
                 } else if (
                     repeat.cycle == "Month" &&
                     date.getDate() == repeat.repeatData &&
@@ -106,7 +172,7 @@ export function buildRepeatToEvent(userdata: User, date: Date) {
                     var endTime = new Date(date);
                     startTime.setHours(repeat.startTime.getHours(), repeat.startTime.getMinutes());
                     endTime.setHours(repeat.endTime.getHours(), repeat.endTime.getMinutes());
-                    calendar.events.push(createEvent(repeat.name, calendar.color, startTime, endTime, repeat.id, false, false));
+                    calendar.events.push(createEvent(repeat.name, calendar.color, startTime, endTime, repeat.id, false, false, "", "", calendar.title));
                 }
             }
         });

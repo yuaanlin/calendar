@@ -81,7 +81,7 @@ export class Event {
     }
 
     isAllDayEvent() {
-        return this.getDuration() >= 1440;
+        return this.getDuration() >= 1438;
     }
 
     getStartTimeSrting() {

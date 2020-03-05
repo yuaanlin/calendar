@@ -87,7 +87,9 @@ class index extends React.Component<IndexProps, IndexStates> {
 
     componentDidMount() {
         setTimeout(() => {
-            this.setState({ userdata: this.props.userdata, loaded: true });
+            var newdata = buildRepeatToEvent(this.props.userdata, new Date());
+            fetch(backendURL + "/api/updateuserdata", { method: "post", body: JSON.stringify({ calendars: newdata.calendars }) });
+            this.setState({ userdata: newdata, loaded: true });
         }, 200);
     }
 
@@ -187,7 +189,7 @@ class index extends React.Component<IndexProps, IndexStates> {
         var newdata = this.state.userdata;
         newdata.calendars.map(calendar => {
             if (calendar.title == this.state.inputing.calendar.label) {
-                calendar.events.push(createEvent(this.state.inputing.title, calendar.color, newStartTime, newEndTime, "", false, false, this.state.inputing.description, this.state.inputing.location));
+                calendar.events.push(createEvent(this.state.inputing.title, calendar.color, newStartTime, newEndTime, "", false, false, this.state.inputing.description, this.state.inputing.location, calendar.title));
             }
         });
 
@@ -236,7 +238,7 @@ class index extends React.Component<IndexProps, IndexStates> {
         );
         if (this.state.inputing.allday) {
             newStartTime.setHours(0, 0);
-            newEndTime.setHours(24, 0);
+            newEndTime.setHours(23, 59);
         } else {
             newStartTime.setHours(+this.state.inputing.time.split("~")[0].split(":")[0], +this.state.inputing.time.split("~")[0].split(":")[1]);
             newEndTime.setHours(+this.state.inputing.time.split("~")[1].split(":")[0], +this.state.inputing.time.split("~")[1].split(":")[1]);
@@ -257,6 +259,7 @@ class index extends React.Component<IndexProps, IndexStates> {
                 calendar.repeats.push(newRepeat);
             }
         });
+        newdata = buildRepeatToEvent(newdata, this.state.selectedDay);
 
         // 更新視圖
         var etd = eventsToDispay(newdata.calendars, new Date());
