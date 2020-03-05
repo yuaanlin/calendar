@@ -410,81 +410,75 @@ class index extends React.Component<IndexProps, IndexStates> {
                 </Helmet>
 
                 <FlexboxGrid justify="center">
-                    <FlexboxGrid.Item colspan={16}>
-                        <FlexboxGrid justify="space-around">
 
-                            <FlexboxGrid.Item colspan={4}>
-
-                            </FlexboxGrid.Item>
-                            <FlexboxGrid.Item colspan={6}>
-                                <div className="app-title">
-                                    <h1>Reacal</h1>
-                                    <p>專注於使用者體驗的日程規劃工具</p>
-                                </div>
-                                <div className="day-picker-panel">
-                                    <DayPicker selectedDays={this.state.selectedDay} onDayClick={this.handleDayClick} />
-                                </div>
-                                <div className="day-info">
-                                    <h3>
-                                        {this.state.selectedDay.getFullYear()} / {this.state.selectedDay.getMonth() + 1} / {this.state.selectedDay.getDate()}
-                                    </h3>
-                                    <p>{dayDescription}</p>
-                                </div>
-                                <div className="day-view-panel">
-                                    <div className="day-view-scroll">
-                                        <Transition in={this.state.loaded} timeout={duration}>
-                                            {state => (
-                                                <div
-                                                    style={{
-                                                        ...defaultStyle,
-                                                        ...transitionStyles[state]
-                                                    }}
-                                                >
-                                                    {AllDayEventsContent}
-                                                </div>
-                                            )}
-                                        </Transition>
-                                    </div>
-                                </div>
-                            </FlexboxGrid.Item>
-                            <FlexboxGrid.Item colspan={14}>
-                                <Panel style={{ marginLeft: 60 }} bodyFill onDoubleClick={this.openEventCreateDialog}>
-                                    <div style={{
-                                        overflowY: "scroll",
-                                        height: "100vh",
-                                    }}>
+                    <FlexboxGrid.Item colspan={6} />
+                    <FlexboxGrid.Item colspan={6}>
+                        <div className="app-title">
+                            <h1>Reacal</h1>
+                            <p>專注於使用者體驗的日程規劃工具</p>
+                        </div>
+                        <div className="day-picker-panel">
+                            <DayPicker selectedDays={this.state.selectedDay} onDayClick={this.handleDayClick} />
+                        </div>
+                        <div className="day-info">
+                            <h3>
+                                {this.state.selectedDay.getFullYear()} / {this.state.selectedDay.getMonth() + 1} / {this.state.selectedDay.getDate()}
+                            </h3>
+                            <p>{dayDescription}</p>
+                        </div>
+                        <div className="day-view-panel">
+                            <div className="day-view-scroll">
+                                <Transition in={this.state.loaded} timeout={duration}>
+                                    {state => (
                                         <div
                                             style={{
-                                                height: 1420,
-                                                margin: 48,
-                                                position: "relative"
+                                                ...defaultStyle,
+                                                ...transitionStyles[state]
                                             }}
-                                            ref={this.dayviewContainer}
                                         >
-                                            <FlexboxGrid justify="start">
-                                                <FlexboxGrid.Item colspan={16}>
-                                                    {HourLines}
-
-                                                    <Transition in={this.state.loaded} timeout={duration}>
-                                                        {state => (
-                                                            <div
-                                                                style={{
-                                                                    ...defaultStyle,
-                                                                    ...transitionStyles[state]
-                                                                }}
-                                                            >
-                                                                {DayviewContent}
-                                                            </div>
-                                                        )}
-                                                    </Transition>
-                                                </FlexboxGrid.Item>
-                                            </FlexboxGrid>
+                                            {AllDayEventsContent}
                                         </div>
-                                    </div>
+                                    )}
+                                </Transition>
+                            </div>
+                        </div>
+                    </FlexboxGrid.Item>
+                    <FlexboxGrid.Item colspan={12}>
+                        <Panel bodyFill onDoubleClick={this.openEventCreateDialog}>
+                            <div style={{
+                                overflowY: "scroll",
+                                height: "100vh",
+                            }}>
+                                <div
+                                    style={{
+                                        height: 1420,
+                                        margin: 48,
+                                        position: "relative"
+                                    }}
+                                    ref={this.dayviewContainer}
+                                >
+                                    <FlexboxGrid justify="start">
+                                        <FlexboxGrid.Item colspan={12}>
+                                            {HourLines}
 
-                                </Panel>
-                            </FlexboxGrid.Item>
-                        </FlexboxGrid>
+                                            <Transition in={this.state.loaded} timeout={duration}>
+                                                {state => (
+                                                    <div
+                                                        style={{
+                                                            ...defaultStyle,
+                                                            ...transitionStyles[state]
+                                                        }}
+                                                    >
+                                                        {DayviewContent}
+                                                    </div>
+                                                )}
+                                            </Transition>
+                                        </FlexboxGrid.Item>
+                                    </FlexboxGrid>
+                                </div>
+                            </div>
+
+                        </Panel>
                     </FlexboxGrid.Item>
                 </FlexboxGrid>
 
