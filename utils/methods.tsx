@@ -21,7 +21,7 @@ export function getEventPopoverContent(event: Event) {
     var popoverContent = [];
     if (event.ignore) popoverContent.push(<p>該事件已被忽略，因為{event.ignoreReason} </p>);
     popoverContent.push(<p>{event.calendarTitle}</p>);
-    popoverContent.push(<p>{event.getDurationString()} </p>);
+    if (!event.isAllDayEvent()) popoverContent.push(<p>{event.getDurationString()} </p>);
     if (event.location != "") popoverContent.push(<p>{event.location} </p>);
     if (event.description != "") popoverContent.push(<p>{event.description} </p>);
     return popoverContent;
