@@ -28,7 +28,7 @@ class CreateEventDialog extends React.Component<CreateEventDialogProps> {
         }
 
         return (
-            <Modal show={this.props.creatingEvent} aria-labelledby="form-dialog-title" width="xs">
+            <Modal keyboard show={this.props.creatingEvent} aria-labelledby="form-dialog-title" width="xs">
                 <Modal.Header closeButton onClick={this.props.closeEventCreateDialog}>
                     <h5>創建新事件</h5>
                 </Modal.Header>

@@ -13,6 +13,7 @@ class DayView extends React.Component<DayViewProps> {
                     event={event}
                     openEventEditDialog={this.props.openEventEditDialog}
                     openEventCreateDialog={this.props.openEventCreateDialog}
+                    container={this.props.container}
                 />
             );
         });

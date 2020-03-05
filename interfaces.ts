@@ -1,6 +1,4 @@
-import { User, Event, Repeat, Calendar } from "./classes";
-import { FormProps } from "rsuite/lib/Form/Form";
-
+import { User, Event, Calendar } from "./classes";
 /** index 組件 State */
 export interface IndexStates {
     loaded: boolean,
@@ -29,7 +27,8 @@ export interface EventCardProps {
     height: number,
     event: Event,
     openEventEditDialog(event: Event): void,
-    openEventCreateDialog(): void
+    openEventCreateDialog(): void,
+    container: React.RefObject<HTMLDivElement>;
 }
 
 /** EvnetCard 組件 States */
@@ -55,6 +54,7 @@ export interface DayViewProps {
     events: Array<Event>,
     openEventCreateDialog(): void,
     openEventEditDialog(event: Event): void,
+    container: React.RefObject<HTMLDivElement>;
 }
 
 /** CreateRepeatDialog 組件 Props */
@@ -84,7 +84,8 @@ export interface CreateEventDialogProps {
 export interface AllDayEventsProps {
     events: Array<Event>;
     openEventEditDialog(event: Event): void,
-    openEventCreateDialog(): void
+    openEventCreateDialog(): void,
+    container: React.RefObject<HTMLDivElement>;
 }
 
 /** 輸入內容暫存區 */

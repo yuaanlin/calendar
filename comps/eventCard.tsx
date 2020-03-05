@@ -60,7 +60,7 @@ class EventCard extends React.Component<EventCardProps, EventCardState> {
         else
             return (
 
-                <FlexboxGrid className={event.ignore ? "" : "EventCardGrid"} style={gridStyle}>
+                <FlexboxGrid className={event.ignore ? "ignoredEventCardGrid" : "EventCardGrid"} style={gridStyle}>
                     <FlexboxGrid.Item colspan={4}>
                         {event.getStartTimeSrting()}
                     </FlexboxGrid.Item>
@@ -68,6 +68,7 @@ class EventCard extends React.Component<EventCardProps, EventCardState> {
                         <Whisper
                             placement="right"
                             delayHide={0}
+                            container={this.props.container.current == null ? undefined : this.props.container.current}
                             trigger="hover"
                             speaker={<Popover title={event.title}>{popoverContent.map(content => {
                                 return content;
@@ -80,6 +81,7 @@ class EventCard extends React.Component<EventCardProps, EventCardState> {
                             </Panel>
 
                         </Whisper>
+
                     </FlexboxGrid.Item>
                 </FlexboxGrid>
             );

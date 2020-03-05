@@ -6,7 +6,7 @@ import { AllDayEventsProps } from "../interfaces"
 class AllDayEvents extends React.Component<AllDayEventsProps> {
     render() {
         return this.props.events.map(event => {
-            return <EventCard key={event.id} height={60} event={event} openEventEditDialog={this.props.openEventEditDialog} openEventCreateDialog={this.props.openEventCreateDialog} />;
+            return <EventCard container={this.props.container} key={event.id} height={60} event={event} openEventEditDialog={this.props.openEventEditDialog} openEventCreateDialog={this.props.openEventCreateDialog} />;
         });
     }
 }

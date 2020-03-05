@@ -50,7 +50,7 @@ class CreateRepeatDialog extends React.Component<CreateRepeatDialogProps> {
         }
 
         return (
-            <Modal show={this.props.creatingRepeat} aria-labelledby="form-dialog-title" width="xs">
+            <Modal keyboard show={this.props.creatingRepeat} aria-labelledby="form-dialog-title" width="xs">
                 <Modal.Header closeButton onClick={this.props.closeRepeatCreateDialog}>
                     <h5>創建新系列</h5>
                 </Modal.Header>

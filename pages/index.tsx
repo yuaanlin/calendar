@@ -20,6 +20,7 @@ import "rsuite/lib/styles/themes/dark/index.less";
 import "../style.less";
 
 class index extends React.Component<IndexProps, IndexStates> {
+    dayviewContainer: React.RefObject<HTMLDivElement>;
     constructor(props: Readonly<IndexProps>) {
         super(props);
         this.state = {
@@ -62,6 +63,8 @@ class index extends React.Component<IndexProps, IndexStates> {
         this.createRepeat = this.createRepeat.bind(this);
         this.removeEvent = this.removeEvent.bind(this);
         this.handleFormChange = this.handleFormChange.bind(this);
+        this.keyboardHandler = this.keyboardHandler.bind(this);
+        this.dayviewContainer = React.createRef<HTMLDivElement>();
     }
 
     async handleDayClick(day: Date) {
@@ -85,7 +88,18 @@ class index extends React.Component<IndexProps, IndexStates> {
         }
     }
 
+    keyboardHandler(e: KeyboardEvent) {
+        if (e.keyCode === 27) { // ESC
+            this.setState({
+                creatingEvent: false,
+                editingEvent: false,
+                creatingRepeat: false
+            })
+        }
+    }
+
     componentDidMount() {
+        document.addEventListener("keydown", this.keyboardHandler, false);
         setTimeout(() => {
             var newdata = buildRepeatToEvent(this.props.userdata, new Date());
             fetch(backendURL + "/api/updateuserdata", { method: "post", body: JSON.stringify({ calendars: newdata.calendars }) });
@@ -377,9 +391,9 @@ class index extends React.Component<IndexProps, IndexStates> {
         if (this.state.userdata.calendars != undefined) {
             var etd = eventsToDispay(this.state.userdata.calendars, this.state.selectedDay);
             var ade = allDayEventsToDispay(this.state.userdata.calendars, this.state.selectedDay);
-            DayviewContent = <DayView events={etd} openEventEditDialog={this.openEventEditDialog} openEventCreateDialog={this.openEventCreateDialog} />;
+            DayviewContent = <DayView container={this.dayviewContainer} events={etd} openEventEditDialog={this.openEventEditDialog} openEventCreateDialog={this.openEventCreateDialog} />;
             AllDayEventsContent = (
-                <AllDayEvents events={ade} openEventEditDialog={this.openEventEditDialog} openEventCreateDialog={this.openEventCreateDialog} />
+                <AllDayEvents container={this.dayviewContainer} events={ade} openEventEditDialog={this.openEventEditDialog} openEventCreateDialog={this.openEventCreateDialog} />
             );
         }
         var Hours = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23];
@@ -396,9 +410,13 @@ class index extends React.Component<IndexProps, IndexStates> {
                 </Helmet>
 
                 <FlexboxGrid justify="center">
-                    <FlexboxGrid.Item componentClass={Col} colspan={24} xs={20} sm={18} md={12}>
+                    <FlexboxGrid.Item colspan={16}>
                         <FlexboxGrid justify="space-around">
-                            <FlexboxGrid.Item colspan={7}>
+
+                            <FlexboxGrid.Item colspan={4}>
+
+                            </FlexboxGrid.Item>
+                            <FlexboxGrid.Item colspan={6}>
                                 <div className="app-title">
                                     <h1>Reacal</h1>
                                     <p>專注於使用者體驗的日程規劃工具</p>
@@ -441,22 +459,26 @@ class index extends React.Component<IndexProps, IndexStates> {
                                                 margin: 48,
                                                 position: "relative"
                                             }}
+                                            ref={this.dayviewContainer}
                                         >
+                                            <FlexboxGrid justify="start">
+                                                <FlexboxGrid.Item colspan={16}>
+                                                    {HourLines}
 
-                                            {HourLines}
-
-                                            <Transition in={this.state.loaded} timeout={duration}>
-                                                {state => (
-                                                    <div
-                                                        style={{
-                                                            ...defaultStyle,
-                                                            ...transitionStyles[state]
-                                                        }}
-                                                    >
-                                                        {DayviewContent}
-                                                    </div>
-                                                )}
-                                            </Transition>
+                                                    <Transition in={this.state.loaded} timeout={duration}>
+                                                        {state => (
+                                                            <div
+                                                                style={{
+                                                                    ...defaultStyle,
+                                                                    ...transitionStyles[state]
+                                                                }}
+                                                            >
+                                                                {DayviewContent}
+                                                            </div>
+                                                        )}
+                                                    </Transition>
+                                                </FlexboxGrid.Item>
+                                            </FlexboxGrid>
                                         </div>
                                     </div>
 
