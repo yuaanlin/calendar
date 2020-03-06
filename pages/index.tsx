@@ -89,12 +89,13 @@ class index extends React.Component<IndexProps, IndexStates> {
     }
 
     keyboardHandler(e: KeyboardEvent) {
-        if (e.keyCode === 27) { // ESC
+        if (e.keyCode === 27) {
+            // ESC
             this.setState({
                 creatingEvent: false,
                 editingEvent: false,
                 creatingRepeat: false
-            })
+            });
         }
     }
 
@@ -203,7 +204,20 @@ class index extends React.Component<IndexProps, IndexStates> {
         var newdata = this.state.userdata;
         newdata.calendars.map(calendar => {
             if (calendar.title == this.state.inputing.calendar.label) {
-                calendar.events.push(createEvent(this.state.inputing.title, calendar.color, newStartTime, newEndTime, "", false, false, this.state.inputing.description, this.state.inputing.location, calendar.title));
+                calendar.events.push(
+                    createEvent(
+                        this.state.inputing.title,
+                        calendar.color,
+                        newStartTime,
+                        newEndTime,
+                        "",
+                        false,
+                        false,
+                        this.state.inputing.description,
+                        this.state.inputing.location,
+                        calendar.title
+                    )
+                );
             }
         });
 
@@ -218,7 +232,8 @@ class index extends React.Component<IndexProps, IndexStates> {
         } catch (err) {
             displayError("對不起 ... 發生技術性問題啦 T_T", "創建新事件時發生了一些問題，希望你可以與我們聯絡來幫助我們改進 !");
         } finally {
-            if (res != null && res.status != 200) displayError("對不起 ... 發生技術性問題啦 T_T", "創建新事件時發生了一些問題，希望你可以與我們聯絡來幫助我們改進 !");
+            if (res != null && res.status != 200)
+                displayError("對不起 ... 發生技術性問題啦 T_T", "創建新事件時發生了一些問題，希望你可以與我們聯絡來幫助我們改進 !");
         }
     }
 
@@ -286,7 +301,8 @@ class index extends React.Component<IndexProps, IndexStates> {
         } catch (err) {
             displayError("對不起 ... 發生技術性問題啦 T_T", "創建新系列時發生了一些問題，希望你可以與我們聯絡來幫助我們改進 !");
         } finally {
-            if (res != null && res.status != 200) displayError("對不起 ... 發生技術性問題啦 T_T", "創建新系列時發生了一些問題，希望你可以與我們聯絡來幫助我們改進 !");
+            if (res != null && res.status != 200)
+                displayError("對不起 ... 發生技術性問題啦 T_T", "創建新系列時發生了一些問題，希望你可以與我們聯絡來幫助我們改進 !");
         }
     }
 
@@ -331,7 +347,8 @@ class index extends React.Component<IndexProps, IndexStates> {
         } catch (err) {
             displayError("對不起 ... 發生技術性問題啦 T_T", "更新事件時發生了一些問題，希望你可以與我們聯絡來幫助我們改進 !");
         } finally {
-            if (res != null && res.status != 200) displayError("對不起 ... 發生技術性問題啦 T_T", "更新事件時發生了一些問題，希望你可以與我們聯絡來幫助我們改進 !");
+            if (res != null && res.status != 200)
+                displayError("對不起 ... 發生技術性問題啦 T_T", "更新事件時發生了一些問題，希望你可以與我們聯絡來幫助我們改進 !");
         }
     }
 
@@ -361,7 +378,8 @@ class index extends React.Component<IndexProps, IndexStates> {
         } catch (err) {
             displayError("對不起 ... 發生技術性問題啦 T_T", "刪除事件時發生了一些問題，希望你可以與我們聯絡來幫助我們改進 !");
         } finally {
-            if (res != null && res.status != 200) displayError("對不起 ... 發生技術性問題啦 T_T", "刪除事件時發生了一些問題，希望你可以與我們聯絡來幫助我們改進 !");
+            if (res != null && res.status != 200)
+                displayError("對不起 ... 發生技術性問題啦 T_T", "刪除事件時發生了一些問題，希望你可以與我們聯絡來幫助我們改進 !");
         }
     }
 
@@ -391,15 +409,27 @@ class index extends React.Component<IndexProps, IndexStates> {
         if (this.state.userdata.calendars != undefined) {
             var etd = eventsToDispay(this.state.userdata.calendars, this.state.selectedDay);
             var ade = allDayEventsToDispay(this.state.userdata.calendars, this.state.selectedDay);
-            DayviewContent = <DayView container={this.dayviewContainer} events={etd} openEventEditDialog={this.openEventEditDialog} openEventCreateDialog={this.openEventCreateDialog} />;
+            DayviewContent = (
+                <DayView
+                    container={this.dayviewContainer}
+                    events={etd}
+                    openEventEditDialog={this.openEventEditDialog}
+                    openEventCreateDialog={this.openEventCreateDialog}
+                />
+            );
             AllDayEventsContent = (
-                <AllDayEvents container={this.dayviewContainer} events={ade} openEventEditDialog={this.openEventEditDialog} openEventCreateDialog={this.openEventCreateDialog} />
+                <AllDayEvents
+                    container={this.dayviewContainer}
+                    events={ade}
+                    openEventEditDialog={this.openEventEditDialog}
+                    openEventCreateDialog={this.openEventCreateDialog}
+                />
             );
         }
         var Hours = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23];
         var HourLines = Hours.map(hour => {
-            return <Divider key={hour} style={{ position: "absolute", top: hour * 60, width: "100%", margin: 0 }} />
-        })
+            return <Divider key={hour} style={{ position: "absolute", top: hour * 60, width: "100%", margin: 0 }} />;
+        });
 
         var dayDescription = getDayDescription(this.state.selectedDay);
 
@@ -410,21 +440,16 @@ class index extends React.Component<IndexProps, IndexStates> {
                 </Helmet>
 
                 <FlexboxGrid justify="center">
-
                     <FlexboxGrid.Item colspan={6} />
                     <FlexboxGrid.Item colspan={6}>
-                        <div className="app-title">
-                            <h1>Reacal</h1>
-                            <p>專注於使用者體驗的日程規劃工具</p>
+                        <div className="day-info">
+                            <h1>
+                                {this.state.selectedDay.getFullYear()} / {this.state.selectedDay.getMonth() + 1} / {this.state.selectedDay.getDate()}
+                            </h1>
+                            <p>{dayDescription}</p>
                         </div>
                         <div className="day-picker-panel">
                             <DayPicker selectedDays={this.state.selectedDay} onDayClick={this.handleDayClick} />
-                        </div>
-                        <div className="day-info">
-                            <h3>
-                                {this.state.selectedDay.getFullYear()} / {this.state.selectedDay.getMonth() + 1} / {this.state.selectedDay.getDate()}
-                            </h3>
-                            <p>{dayDescription}</p>
                         </div>
                         <div className="day-view-panel">
                             <div className="day-view-scroll">
@@ -445,10 +470,12 @@ class index extends React.Component<IndexProps, IndexStates> {
                     </FlexboxGrid.Item>
                     <FlexboxGrid.Item colspan={12}>
                         <Panel bodyFill onDoubleClick={this.openEventCreateDialog}>
-                            <div style={{
-                                overflowY: "scroll",
-                                height: "100vh",
-                            }}>
+                            <div
+                                style={{
+                                    overflowY: "scroll",
+                                    height: "100vh"
+                                }}
+                            >
                                 <div
                                     style={{
                                         height: 1420,
@@ -477,7 +504,6 @@ class index extends React.Component<IndexProps, IndexStates> {
                                     </FlexboxGrid>
                                 </div>
                             </div>
-
                         </Panel>
                     </FlexboxGrid.Item>
                 </FlexboxGrid>
