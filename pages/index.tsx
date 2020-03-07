@@ -431,22 +431,25 @@ class index extends React.Component<IndexProps, IndexStates> {
             return <Divider key={hour} style={{ position: "absolute", top: hour * 60, width: "100%", margin: 0 }} />;
         });
 
+        const monthNames = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+
         var dayDescription = getDayDescription(this.state.selectedDay);
 
         return (
             <Container>
                 <Helmet>
-                    <title>Reacal : 專注於使用者體驗的日程規劃工具</title>
+                    <title>Reco : 專注於使用者體驗的日程規劃工具</title>
                 </Helmet>
 
                 <FlexboxGrid justify="center">
                     <FlexboxGrid.Item colspan={6} />
                     <FlexboxGrid.Item colspan={6}>
                         <div className="day-info">
-                            <h1>
-                                {this.state.selectedDay.getFullYear()} / {this.state.selectedDay.getMonth() + 1} / {this.state.selectedDay.getDate()}
-                            </h1>
                             <p>{dayDescription}</p>
+                            <h1>{this.state.selectedDay.getDate()}</h1>
+                            <h3>
+                                {monthNames[this.state.selectedDay.getMonth()]} {this.state.selectedDay.getFullYear()}{" "}
+                            </h3>
                         </div>
                         <div className="day-picker-panel">
                             <DayPicker selectedDays={this.state.selectedDay} onDayClick={this.handleDayClick} />
