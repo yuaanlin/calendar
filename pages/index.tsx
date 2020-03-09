@@ -14,7 +14,7 @@ import { IndexStates, IndexProps, Inputing } from "../interfaces";
 import { backendURL, duration, defaultStyle, transitionStyles } from "../config";
 import { getDayDescription, displayError, eventsToDispay, allDayEventsToDispay, buildRepeatToEvent, createEvent } from "../utils/methods";
 
-import { Loader, Panel, Container, FlexboxGrid, Col, Divider } from "rsuite";
+import { Loader, Panel, Container, FlexboxGrid, Col, Divider, Sidenav, Nav, Icon, Dropdown } from "rsuite";
 
 import "rsuite/lib/styles/themes/dark/index.less";
 import "../style.less";
@@ -442,7 +442,23 @@ class index extends React.Component<IndexProps, IndexStates> {
                 </Helmet>
 
                 <FlexboxGrid justify="center">
-                    <FlexboxGrid.Item colspan={6} />
+                    <FlexboxGrid.Item colspan={6}>
+                        <Sidenav defaultOpenKeys={["3", "4"]} style={{ width: 200, backgroundColor: "rgba(0,0,0,0.2)", height: "100vh" }}>
+                            <Sidenav.Header>
+                                <div className="appLogo">
+                                    <h1>Reco</h1>
+                                    <p>專門為你打造的日程規劃工具</p>
+                                </div>
+                            </Sidenav.Header>
+                            <Sidenav.Body>
+                                <Nav>
+                                    <Nav.Item eventKey="1" icon={<Icon icon="th-list" />}>
+                                        日程檢視
+                                    </Nav.Item>
+                                </Nav>
+                            </Sidenav.Body>
+                        </Sidenav>
+                    </FlexboxGrid.Item>
                     <FlexboxGrid.Item colspan={6}>
                         <div className="day-info">
                             <p>{dayDescription}</p>
@@ -450,9 +466,6 @@ class index extends React.Component<IndexProps, IndexStates> {
                             <h3>
                                 {monthNames[this.state.selectedDay.getMonth()]} {this.state.selectedDay.getFullYear()}{" "}
                             </h3>
-                        </div>
-                        <div className="day-picker-panel">
-                            <DayPicker selectedDays={this.state.selectedDay} onDayClick={this.handleDayClick} />
                         </div>
                         <div className="day-view-panel">
                             <div className="day-view-scroll">
@@ -469,6 +482,9 @@ class index extends React.Component<IndexProps, IndexStates> {
                                     )}
                                 </Transition>
                             </div>
+                        </div>
+                        <div className="day-picker-panel">
+                            <DayPicker selectedDays={this.state.selectedDay} onDayClick={this.handleDayClick} />
                         </div>
                     </FlexboxGrid.Item>
                     <FlexboxGrid.Item colspan={12}>
